@@ -33,6 +33,7 @@ func scoreText(s string) int {
 	return score
 }
 
+// getXORFunction returns a function which XORs a rune with the provided rune
 func getXORFunction(i rune) func(rune) rune {
 	return func(char rune) rune {
 		return char ^ i
