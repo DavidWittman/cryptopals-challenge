@@ -26,8 +26,8 @@ func FindXORedStringInFile(filename string) (string, error) {
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		plaintext := DecryptXOR(scanner.Text())
-		score := scoreText(plaintext)
+		plaintext := DecryptHexStringXOR(scanner.Text())
+		score := ScoreText(plaintext)
 		if score > highScore {
 			highScore = score
 			result = plaintext

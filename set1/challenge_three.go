@@ -14,15 +14,16 @@ Character frequency is a good metric. Evaluate each output and choose the one wi
 package set_one
 
 import (
+	"bytes"
 	"encoding/hex"
 	"strings"
 )
 
-// scoreText will value the contents of a string based on the frequency of
+// ScoreText will value the contents of a string based on the frequency of
 // common English characters defined in the array goodChars.
 // Higher scores are better, and a string with no matching characters will
 // return 0.
-func scoreText(s string) int {
+func ScoreText(s string) int {
 	score := 0
 	goodChars := [12]string{"a", "e", "i", "o", "u", "r", "s", "t", "l", "m", "n", " "}
 
@@ -33,25 +34,28 @@ func scoreText(s string) int {
 	return score
 }
 
-// getXORFunction returns a function which XORs a rune with the provided rune
+// getXORFunction returns a function which XORs a byte with the provided byte
 func getXORFunction(i rune) func(rune) rune {
 	return func(char rune) rune {
 		return char ^ i
 	}
 }
 
-func DecryptXOR(enc string) string {
-	highScore := 0
-	var decrypted string
-
+func DecryptHexStringXOR(enc string) string {
 	encBytes, err := hex.DecodeString(enc)
 	if err != nil {
 		panic(err)
 	}
+	return string(DecryptXOR(encBytes))
+}
+
+func DecryptXOR(buf []byte) []byte {
+	highScore := 0
+	var decrypted []byte
 
 	for i := 0; i < 256; i++ {
-		plaintext := strings.Map(getXORFunction(rune(i)), string(encBytes))
-		score := scoreText(plaintext)
+		plaintext := bytes.Map(getXORFunction(rune(i)), buf)
+		score := ScoreText(string(plaintext))
 		if score > highScore {
 			decrypted = plaintext
 			highScore = score

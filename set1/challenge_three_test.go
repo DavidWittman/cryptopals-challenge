@@ -4,10 +4,19 @@ import (
 	"testing"
 )
 
-func TestDecryptXOR(t *testing.T) {
-	result := DecryptXOR("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
+func TestDecryptHexStringXOR(t *testing.T) {
+	result := DecryptHexStringXOR("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")
 	if result == "" {
 		t.Fail()
 	}
 	t.Log("Decrypted text:", result)
+}
+
+func TestDecryptXOR(t *testing.T) {
+	buf := []byte{0x1b, 0x37, 0x37, 0x33, 0x31, 0x36, 0x3f, 0x78, 0x15, 0x1b, 0x7f, 0x2b, 0x78, 0x34, 0x31, 0x33, 0x3d, 0x78, 0x39, 0x78, 0x28, 0x37, 0x2d, 0x36, 0x3c, 0x78, 0x37, 0x3e, 0x78, 0x3a, 0x39, 0x3b, 0x37, 0x36}
+	result := DecryptXOR(buf)
+	if string(result) == "" {
+		t.Fail()
+	}
+	t.Log("Decrypted text:", string(result))
 }

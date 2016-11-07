@@ -1,26 +1,22 @@
 /*
-There's a file here. It's been base64'd after being encrypted with repeating-key XOR.
+Challenge Six
 
-Decrypt it.
+There's a file here. It's been base64'd after being encrypted with repeating-key XOR. Decrypt it.
 
 Here's how:
 
-Let KEYSIZE be the guessed length of the key; try values from 2 to (say) 40.
+ 1. Let KEYSIZE be the guessed length of the key; try values from 2 to (say) 40.
 Write a function to compute the edit distance/Hamming distance between two strings. The Hamming distance is just the number of differing bits. The distance between:
 this is a test
 and
 wokka wokka!!!
 is 37. Make sure your code agrees before you proceed.
-For each KEYSIZE, take the first KEYSIZE worth of bytes, and the second KEYSIZE worth of bytes, and find the edit distance between them. Normalize this result by dividing by KEYSIZE.
-The KEYSIZE with the smallest normalized edit distance is probably the key. You could proceed perhaps with the smallest 2-3 KEYSIZE values. Or take 4 KEYSIZE blocks instead of 2 and average the distances.
-Now that you probably know the KEYSIZE: break the ciphertext into blocks of KEYSIZE length.
-Now transpose the blocks: make a block that is the first byte of every block, and a block that is the second byte of every block, and so on.
-Solve each block as if it was single-character XOR. You already have code to do this.
-For each block, the single-byte XOR key that produces the best looking histogram is the repeating-key XOR key byte for that block. Put them together and you have the key.
-This code is going to turn out to be surprisingly useful later on. Breaking repeating-key XOR ("Vigenere") statistically is obviously an academic exercise, a "Crypto 101" thing. But more people "know how" to break it than can actually break it, and a similar technique breaks something much more important.
-
-No, that's not a mistake.
-We get more tech support questions for this challenge than any of the other ones. We promise, there aren't any blatant errors in this text. In particular: the "wokka wokka!!!" edit distance really is 37.
+ 2. For each KEYSIZE, take the first KEYSIZE worth of bytes, and the second KEYSIZE worth of bytes, and find the edit distance between them. Normalize this result by dividing by KEYSIZE.
+ 3. The KEYSIZE with the smallest normalized edit distance is probably the key. You could proceed perhaps with the smallest 2-3 KEYSIZE values. Or take 4 KEYSIZE blocks instead of 2 and average the distances.
+ 4. Now that you probably know the KEYSIZE: break the ciphertext into blocks of KEYSIZE length.
+ 5. Now transpose the blocks: make a block that is the first byte of every block, and a block that is the second byte of every block, and so on.
+ 6. Solve each block as if it was single-character XOR. You already have code to do this.
+ 7. For each block, the single-byte XOR key that produces the best looking histogram is the repeating-key XOR key byte for that block. Put them together and you have the key.
 */
 
 package set_one
@@ -28,13 +24,11 @@ package set_one
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 )
 
-const MAX_KEYSIZE = 64
+const MAX_KEYSIZE = 40
 
 // Count the number of 1 bits in byte b
 // We're passing in a byte from the XORed byte-array here to determine the hamming distance
@@ -46,7 +40,31 @@ func countBits(b byte) int {
 	return count
 }
 
-func hammingDistance(s1, s2 []byte) int {
+// Splits a byte slice into length chunks
+func split(buf []byte, length int) [][]byte {
+	chunks := [][]byte{}
+	for offset := 0; offset < len(buf); offset += length {
+		if offset+length >= len(buf) {
+			chunks = append(chunks, buf[offset:])
+		} else {
+			chunks = append(chunks, buf[offset:offset+length])
+		}
+	}
+	return chunks
+}
+
+// Transpose a slice of byte slices. e.g. AA,BB,CC == ABC,ABC
+func transpose(chunks [][]byte) [][]byte {
+	result := make([][]byte, len(chunks[0]))
+	for _, chunk := range chunks {
+		for j, b := range chunk {
+			result[j] = append(result[j], b)
+		}
+	}
+	return result
+}
+
+func HammingDistance(s1, s2 []byte) int {
 	var distance int
 	for i, c := range s1 {
 		distance += countBits(s2[i] ^ c)
@@ -54,48 +72,45 @@ func hammingDistance(s1, s2 []byte) int {
 	return distance
 }
 
+// Computes the hamming distance of `size` sized blocks in cipher
+// Distances are normalized and averaged
+func BlockDistance(cipher []byte, size int) float64 {
+	var distance float64
+
+	// Don't continue if there are fewer than four blocks to compare
+	if len(cipher) < (size * 4) {
+		return -1
+	}
+
+	// Minus one because we're looking ahead a block to compare
+	iters := (len(cipher) / size) - 1
+
+	for i := 0; i < iters; i++ {
+		a := cipher[i*size : (i+1)*size]
+		b := cipher[(i+1)*size : (i+2)*size]
+		distance += float64(HammingDistance(a, b))
+	}
+
+	// Normalize and average distance
+	return distance / float64(size) / float64(iters)
+}
+
 // Attempts to guess the Vigenere cipher key size by comparing the edit distance of blocks
 // within cipher. The guessed keysize with the lowest edit distance is selected.
 // Attempts key sizes between 2 and 64 bytes.
-// Returns 0 on error.
-func GuessKeySize(cipher []byte) uint8 {
-	var keySize uint8
-	distances := make(map[int]float64)
+func GuessKeySize(cipher []byte) int {
+	bestKeySize := 0
+	bestDistance := 9999999.99
 
 	for i := 2; i <= MAX_KEYSIZE; i++ {
-		cipherReader := bytes.NewReader(cipher)
-		block1 := make([]byte, i)
-		block2 := make([]byte, i)
-
-		for {
-			n, err := cipherReader.Read(block1)
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				panic(err)
-			}
-
-			n, err = cipherReader.Read(block2)
-			if err == io.EOF {
-				distances[i] += float64(hammingDistance(block1[:n], block2[:n]) / i)
-				break
-			} else if err != nil {
-				panic(err)
-			}
-
-			distances[i] += float64(hammingDistance(block1, block2) / i)
-		}
-	}
-
-	bestDistance := 999999.99
-	for key, distance := range distances {
-		if distance < bestDistance {
+		distance := BlockDistance(cipher, i)
+		if distance >= 0 && distance < bestDistance {
 			bestDistance = distance
-			keySize = uint8(key)
+			bestKeySize = i
 		}
 	}
 
-	return keySize
+	return bestKeySize
 }
 
 // This function will open `filename` and attempt to break a Vigenere (repeating-key XOR) cipher,
@@ -112,7 +127,13 @@ func BreakRepeatingKeyXOR(filename string) []byte {
 		panic(err)
 	}
 	keySize := GuessKeySize(cipherBytes)
-	fmt.Println(keySize)
 
-	return []byte{}
+	byteGroups := transpose(split(cipherBytes, keySize))
+	for i, byteGroup := range byteGroups {
+		byteGroups[i] = DecryptXOR(byteGroup)
+	}
+
+	decrypted := bytes.Join(transpose(byteGroups), []byte{})
+
+	return decrypted
 }
