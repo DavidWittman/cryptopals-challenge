@@ -64,6 +64,8 @@ func transpose(chunks [][]byte) [][]byte {
 	return result
 }
 
+// The Hamming Distance (or edit distance) is the number of differing bits between two buffers
+// This is computed by XORing the two buffers and adding up the bits in the resultant buffer.
 func HammingDistance(s1, s2 []byte) int {
 	var distance int
 	for i, c := range s1 {
