@@ -23,9 +23,7 @@ package set_one
 
 import (
 	"bytes"
-	"encoding/base64"
-	"io/ioutil"
-	"os"
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 const MAX_KEYSIZE = 40
@@ -118,13 +116,7 @@ func GuessKeySize(cipher []byte) int {
 // This function will open `filename` and attempt to break a Vigenere (repeating-key XOR) cipher,
 // returning the key as a slice of bytes
 func BreakRepeatingKeyXOR(filename string) []byte {
-	file, err := os.Open(filename)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	cipherBytes, err := ioutil.ReadAll(base64.NewDecoder(base64.StdEncoding, file))
+	cipherBytes, err := cryptopals.ReadAllBase64(filename)
 	if err != nil {
 		panic(err)
 	}

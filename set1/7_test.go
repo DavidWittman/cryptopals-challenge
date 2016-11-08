@@ -4,5 +4,6 @@ import (
 	"testing"
 )
 
-func TestDecryptAes128Ecb(t *testing.T) {
+func TestDecryptAES128ECB(t *testing.T) {
+	t.Log(DecryptAES128ECB("./data/7.txt"))
 }
