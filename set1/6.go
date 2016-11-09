@@ -38,19 +38,6 @@ func countBits(b byte) int {
 	return count
 }
 
-// Splits a byte slice into length chunks
-func split(buf []byte, length int) [][]byte {
-	chunks := [][]byte{}
-	for offset := 0; offset < len(buf); offset += length {
-		if offset+length >= len(buf) {
-			chunks = append(chunks, buf[offset:])
-		} else {
-			chunks = append(chunks, buf[offset:offset+length])
-		}
-	}
-	return chunks
-}
-
 // Transpose a slice of byte slices. e.g. AA,BB,CC == ABC,ABC
 func transpose(chunks [][]byte) [][]byte {
 	result := make([][]byte, len(chunks[0]))
@@ -122,7 +109,7 @@ func BreakRepeatingKeyXOR(filename string) []byte {
 	}
 	keySize := GuessKeySize(cipherBytes)
 
-	byteGroups := transpose(split(cipherBytes, keySize))
+	byteGroups := transpose(cryptopals.SplitBytes(cipherBytes, keySize))
 	for i, byteGroup := range byteGroups {
 		byteGroups[i] = DecryptXOR(byteGroup)
 	}

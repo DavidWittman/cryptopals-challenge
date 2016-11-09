@@ -48,24 +48,6 @@ func TestBreakRepeatingKeyXOR(t *testing.T) {
 	t.Log(string(BreakRepeatingKeyXOR("./data/6.txt")))
 }
 
-func TestSplit(t *testing.T) {
-	buf := []byte("aaaaabbbbbcccccdddddeeeeefffff")
-	result := split(buf, 5)
-	expected := [][]byte{
-		[]byte("aaaaa"),
-		[]byte("bbbbb"),
-		[]byte("ccccc"),
-		[]byte("ddddd"),
-		[]byte("eeeee"),
-		[]byte("fffff"),
-	}
-	for i, b := range result {
-		if !bytes.Equal(b, expected[i]) {
-			t.Fatalf("Got bytes: %v, expected: %v", b, expected[i])
-		}
-	}
-}
-
 func TestTranspose(t *testing.T) {
 	chunks := [][]byte{
 		[]byte("aa0aa"),

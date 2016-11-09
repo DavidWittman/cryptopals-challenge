@@ -20,3 +20,16 @@ func ReadAllBase64(filename string) ([]byte, error) {
 
 	return bytes, nil
 }
+
+// Splits a byte slice into length chunks
+func SplitBytes(buf []byte, length int) [][]byte {
+	chunks := [][]byte{}
+	for offset := 0; offset < len(buf); offset += length {
+		if offset+length >= len(buf) {
+			chunks = append(chunks, buf[offset:])
+		} else {
+			chunks = append(chunks, buf[offset:offset+length])
+		}
+	}
+	return chunks
+}
