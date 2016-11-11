@@ -30,9 +30,8 @@ import (
 func PKCS7Pad(padLength int, block []byte) []byte {
 	var result []byte
 
-	// Return the block if it's non-zero and already a multiple of the padLength
-	if len(block) != 0 && len(block)%padLength == 0 {
-		return block
+	if padLength <= 1 || padLength >= 256 {
+		panic("9: bad pad length")
 	}
 
 	remainder := padLength - (len(block) % padLength)

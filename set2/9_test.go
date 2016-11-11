@@ -19,7 +19,7 @@ func TestPKCS7Pad(t *testing.T) {
 		{8, []byte("abcde"), []byte("abcde\x03\x03\x03")},
 		{8, []byte("abcdef"), []byte("abcdef\x02\x02")},
 		{8, []byte("abcdefg"), []byte("abcdefg\x01")},
-		{8, []byte("abcdefgh"), []byte("abcdefgh")},
+		{8, []byte("abcdefgh"), []byte("abcdefgh\x08\x08\x08\x08\x08\x08\x08\x08")},
 		{8, []byte("abcdefgh1"), []byte("abcdefgh1\x07\x07\x07\x07\x07\x07\x07")},
 		{16, []byte(""), []byte("\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10\x10")},
 		{16, []byte("a"), []byte("a\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f")},
@@ -30,4 +30,13 @@ func TestPKCS7Pad(t *testing.T) {
 			t.Fatalf("Pad failed. Expected: %v Got: %v", tt.expected, result)
 		}
 	}
+}
+
+func TestPKCS7PadPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("PKCS7Pad did not panic due to invalid block length")
+		}
+	}()
+	_ = PKCS7Pad(256, []byte("zomg"))
 }
