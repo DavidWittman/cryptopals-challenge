@@ -21,6 +21,25 @@ So: pad any block to a specific block length, by appending the number of bytes o
 
 package set_two
 
-func PKCS7Pad(length int, block []byte) []byte {
-	return []byte{}
+import (
+	"bytes"
+)
+
+func PKCS7Pad(padLength int, block []byte) []byte {
+	var result []byte
+
+	// Return the block if it's non-zero and already a multiple of the padLength
+	if len(block) != 0 && len(block)%padLength == 0 {
+		return block
+	}
+
+	remainder := padLength - (len(block) % padLength)
+
+	pad := []byte{byte(remainder)}
+
+	// This syntax is strange here, but it expands the byte slice returned
+	// from bytes.Repeat into individual byte arguments, as required by `append`.
+	result = append(block, bytes.Repeat(pad, remainder)...)
+
+	return result
 }
