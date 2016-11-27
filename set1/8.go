@@ -14,7 +14,6 @@ package set_one
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/hex"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 	"os"
@@ -37,16 +36,9 @@ func FindECBLine(filename string) string {
 			panic(err)
 		}
 
-		chunks := cryptopals.SplitBytes(cipher, 16)
-
-		for i, chunkA := range chunks {
-			for j, chunkB := range chunks {
-				if i != j && bytes.Equal(chunkA, chunkB) {
-					return string(cipher)
-				}
-			}
+		if len(cryptopals.FindMatchingBlock(cipher, 16)) > 0 {
+			return string(cipher)
 		}
-
 	}
 
 	return ""

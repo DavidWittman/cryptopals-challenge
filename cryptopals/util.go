@@ -1,6 +1,7 @@
 package cryptopals
 
 import (
+	"bytes"
 	"encoding/base64"
 	"io/ioutil"
 	"math/rand"
@@ -41,4 +42,21 @@ func SplitBytes(buf []byte, length int) [][]byte {
 func RandomInt(min, max int) int {
 	rand.Seed(time.Now().Unix())
 	return rand.Intn(max-min) + min
+}
+
+// Finds a matching block of size `size` in `data`
+// Returns the block after finding the first match, and an empty byte
+// slice if no match is found.
+func FindMatchingBlock(data []byte, size int) []byte {
+	chunks := SplitBytes(data, size)
+
+	for i, chunkA := range chunks {
+		for j, chunkB := range chunks {
+			if i != j && bytes.Equal(chunkA, chunkB) {
+				return chunkA
+			}
+		}
+	}
+
+	return []byte{}
 }

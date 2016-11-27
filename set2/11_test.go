@@ -27,11 +27,24 @@ func TestGenerateRandomBytes(t *testing.T) {
 }
 
 func TestRandomlyEncryptECBOrCBC(t *testing.T) {
-	data := []byte("this is some sweet plaintext")
-	result, err := RandomlyEncryptECBOrCBC(data)
+	data := []byte("this is some plaintext.\nhere is some more plaintext.")
+	_, mode, err := RandomlyEncryptECBOrCBC(data)
 	if err != nil {
-		t.Errorf("Failed to encrypt: %s", err)
+		t.Errorf("Failed to encrypt (%s): %s", mode, err)
 	}
-	t.Log("Input:", data)
-	t.Log("Output:", result)
+}
+
+func TestDetectECBOrCBC(t *testing.T) {
+	// The plaintext must have at least one identical block or it won't detect ECB
+	data := bytes.Repeat([]byte("B"), 128)
+
+	for i := 0; i < 100; i++ {
+		result, mode, err := RandomlyEncryptECBOrCBC(data)
+		if err != nil {
+			t.Errorf("Failed to encrypt (%s): %s", mode, err)
+		}
+		if mode != DetectECBOrCBC(result, 16) {
+			t.Errorf("Wrong block mode detected.")
+		}
+	}
 }
