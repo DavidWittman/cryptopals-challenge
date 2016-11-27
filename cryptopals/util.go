@@ -3,7 +3,9 @@ package cryptopals
 import (
 	"encoding/base64"
 	"io/ioutil"
+	"math/rand"
 	"os"
+	"time"
 )
 
 func ReadAllBase64(filename string) ([]byte, error) {
@@ -32,4 +34,11 @@ func SplitBytes(buf []byte, length int) [][]byte {
 		}
 	}
 	return chunks
+}
+
+// Returns a non-cryptographically secure random number between
+// `min` and `max` (inclusive)
+func RandomInt(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
 }
