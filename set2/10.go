@@ -27,3 +27,26 @@
  */
 
 package set_two
+
+import (
+	"crypto/aes"
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
+func DecryptFileCBC(filename string, key, iv []byte) ([]byte, error) {
+	contents, err := cryptopals.ReadAllBase64(filename)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	blockMode := cryptopals.NewCBCDecrypter(block, iv)
+	decrypted := make([]byte, len(contents))
+	blockMode.CryptBlocks(decrypted, contents)
+
+	return decrypted, nil
+}

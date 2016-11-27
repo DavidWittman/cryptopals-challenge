@@ -1,0 +1,21 @@
+package cryptopals
+
+import (
+	"bytes"
+	"testing"
+)
+
+func TestFixedXOR(t *testing.T) {
+	expected := []byte("\x74\x68\x65\x20\x6b\x69\x64\x20\x64\x6f\x6e\x27\x74\x20\x70\x6c\x61\x79")
+	a := []byte("\x1c\x01\x11\x00\x1f\x01\x01\x00\x06\x1a\x02\x4b\x53\x53\x50\x09\x18\x1c")
+	b := []byte("\x68\x69\x74\x20\x74\x68\x65\x20\x62\x75\x6c\x6c\x27\x73\x20\x65\x79\x65")
+
+	err := FixedXOR(a, b)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !bytes.Equal(expected, a) {
+		t.Errorf("Expected: %s Got: %s", expected, a)
+	}
+}
