@@ -29,7 +29,6 @@ package set_two
 
 import (
 	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
@@ -61,26 +60,50 @@ func randomPad(data []byte) []byte {
 	return append(prefix, append(data, suffix...)...)
 }
 
-func RandomlyEncryptECBOrCBC(data []byte) ([]byte, error) {
-	var blockMode cipher.BlockMode
-
-	key, _ := GenerateRandomBytes(KEY_SIZE)
+// TODO: Move to cryptopals
+func EncryptAESCBC(data, key, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return []byte{}, err
 	}
 
-	data = PKCS7Pad(KEY_SIZE, randomPad(data))
-
-	if coinflip() {
-		iv, _ := GenerateRandomBytes(KEY_SIZE)
-		blockMode = cryptopals.NewCBCEncrypter(block, iv)
-	} else {
-		blockMode = cryptopals.NewECBEncrypter(block)
-	}
-
+	data = PKCS7Pad(len(key), data)
+	blockMode := cryptopals.NewCBCEncrypter(block, iv)
 	encrypted := make([]byte, len(data))
 	blockMode.CryptBlocks(encrypted, data)
 
 	return encrypted, nil
+}
+
+// TODO: Move to cryptopals
+func EncryptAESECB(data, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	data = PKCS7Pad(len(key), data)
+	blockMode := cryptopals.NewECBEncrypter(block)
+	encrypted := make([]byte, len(data))
+	blockMode.CryptBlocks(encrypted, data)
+
+	return encrypted, nil
+}
+
+func RandomlyEncryptECBOrCBC(data []byte) ([]byte, error) {
+	var encrypted []byte
+	var err error
+
+	key, _ := GenerateRandomBytes(KEY_SIZE)
+
+	data = PKCS7Pad(len(key), randomPad(data))
+
+	if coinflip() {
+		iv, _ := GenerateRandomBytes(KEY_SIZE)
+		encrypted, err = EncryptAESCBC(data, key, iv)
+	} else {
+		encrypted, err = EncryptAESECB(data, key)
+	}
+
+	return encrypted, err
 }
