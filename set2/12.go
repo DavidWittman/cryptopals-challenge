@@ -15,7 +15,6 @@
  *
  * Spoiler alert: Do not decode this string now. Don't do it.
  *
- *
  * Base64 decode the string before appending it. Do not base64 decode the
  * string by hand; make your code do it. The point is that you don't know
  * its contents.
@@ -47,3 +46,35 @@
  */
 
 package set_two
+
+import (
+	"encoding/base64"
+	"io/ioutil"
+	"strings"
+)
+
+var KEY []byte
+
+func init() {
+	KEY, err = GenerateRandomBytes(16)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func Oracle(data []byte) ([]byte, error) {
+	unknownString := `Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXk
+gaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
+dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
+
+	unknownReader := strings.NewReader(unknownString)
+	unknownBytes, err := ioutil.ReadAll(
+		base64.NewDecoder(base64.StdEncoding, unknownReader))
+	if err != nil {
+		return []byte{}, err
+	}
+
+	data = append(data, unknownBytes...)
+
+	return EncryptAESECB(data, KEY)
+}
