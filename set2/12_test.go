@@ -18,3 +18,9 @@ func TestDetermineBlockSize(t *testing.T) {
 		t.Error("Unable to determine block size")
 	}
 }
+
+func TestIsOracleEBC(t *testing.T) {
+	if IsOracleEBC(Oracle, 16) != true {
+		t.Error("IsOracleEBC did not correctly identify an EBC Oracle")
+	}
+}
