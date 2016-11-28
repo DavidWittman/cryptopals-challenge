@@ -48,6 +48,7 @@
 package set_two
 
 import (
+	"bytes"
 	"encoding/base64"
 	"io/ioutil"
 	"strings"
@@ -56,9 +57,28 @@ import (
 var KEY []byte
 
 func init() {
+	var err error
 	KEY, err = GenerateRandomBytes(16)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func DetermineBlockSize(oracle func([]byte) ([]byte, error)) int {
+	prevLen := 0
+	for i := 1; ; i++ {
+		result, err := oracle(bytes.Repeat([]byte("A"), i))
+		if err != nil {
+			panic(err)
+		}
+		if len(result) > prevLen {
+			// Block size increased. Set prevLen if it's the first time,
+			// otherwise compute the difference in block sizes.
+			if prevLen != 0 {
+				return len(result) - prevLen
+			}
+			prevLen = len(result)
+		}
 	}
 }
 
