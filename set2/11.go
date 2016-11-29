@@ -98,7 +98,7 @@ func RandomlyEncryptECBOrCBC(data []byte) ([]byte, string, error) {
 
 	key, _ := GenerateRandomBytes(KEY_SIZE)
 
-	data = PKCS7Pad(len(key), bookendPad(data, 'A'))
+	data = PKCS7Pad(len(key), bookendPad(data, 'Z'))
 
 	// "flip a coin" to determine if we should use ECB or CBC
 	if coinflip() {

@@ -55,10 +55,11 @@ import (
 	"strings"
 )
 
-var KEY []byte
+var KEY []byte = []byte("YELLOW SUBMARINE")
 
 type EncryptionOracle func([]byte) ([]byte, error)
 
+/*
 func init() {
 	var err error
 	KEY, err = GenerateRandomBytes(16)
@@ -66,6 +67,7 @@ func init() {
 		panic(err)
 	}
 }
+*/
 
 func DetermineBlockSize(oracle EncryptionOracle) int {
 	prevLen := 0
@@ -105,4 +107,43 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	data = append(data, unknownBytes...)
 
 	return EncryptAESECB(data, KEY)
+}
+
+// Brute forces the ASCII dictionary (0-255) of an ECB encryption oracle
+func GenerateLastByteDictionary(oracle EncryptionOracle, blockSize int) map[byte]byte {
+	var i byte
+	result := make(map[byte]byte)
+	prefix := bytes.Repeat([]byte("A"), blockSize-1)
+	for i = 0; i <= 255; i++ {
+		lookup := append(prefix, i)
+		lookup, _ = Oracle(lookup)
+		result[i] = lookup[blockSize-1]
+		// If we don't break here, `i` will overflow back to zero and cause an infinite loop
+		if i == 255 {
+			break
+		}
+	}
+	return result
+}
+
+func BreakECB(oracle EncryptionOracle) []byte {
+	var decrypted []byte
+
+	blockSize := DetermineBlockSize(oracle)
+	emptyCipher, _ := Oracle([]byte{})
+	numOfBlocks := len(emptyCipher) / blockSize
+
+	lookup := GenerateLastByteDictionary(oracle, blockSize)
+
+	for block := 0; block < numOfBlocks; block++ {
+		blockStart := block * blockSize
+		lastByte := blockStart + blockSize - 1
+		for i := blockSize - 1; i >= 0; i-- {
+			prefix := bytes.Repeat([]byte("A"), blockStart+i)
+			encrypted, _ := Oracle(prefix)
+			decrypted = append(decrypted, lookup[encrypted[lastByte]])
+		}
+	}
+
+	return decrypted
 }

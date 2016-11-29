@@ -24,3 +24,17 @@ func TestIsOracleEBC(t *testing.T) {
 		t.Error("IsOracleEBC did not correctly identify an EBC Oracle")
 	}
 }
+
+func TestGenerateLastByteDictionary(t *testing.T) {
+	result := GenerateLastByteDictionary(Oracle, 16)
+	t.Log("Last byte dict:", result[58])
+	if len(result) != 256 {
+		t.Error("Did not generate full dictionary from Oracle")
+	}
+}
+
+func TestBreakECB(t *testing.T) {
+	result := BreakECB(Oracle)
+	//t.Log("BreakECB result: ", result)
+	t.Logf("BreakECB result: %s", result)
+}
