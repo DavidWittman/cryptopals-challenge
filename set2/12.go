@@ -44,14 +44,31 @@
  *      your dictionary. You've now discovered the first byte of unknown-string.
  *   6. Repeat for the next byte.
  *
- * Visualization:
+ * Notes:
  *
  *     1 2 3 4 5 6 7 8
  *     A A A A A A A X
+ *
+ *	   Generate a lookup table for all values of X, then run the Encryption Oracle
+ *     with _only_ the padding and let it fill in the rest with the secret bytes.
+ *     Then lookup the block which the Oracle created in your lookup table and
+ *     proceed to the next byte. Let's pretend our discovered byte was `s`:
+ *
+ *     1 2 3 4 5 6 7 8
  *     A A A A A A s X
+ *
+ *     Our new lookup table generates all values for X here, then we run the
+ *     Encryption Oracle with 6 A's, let it fill in the 7th byte with the already
+ *     known letter `s`, and our mystery byte in 8. Now lookup in your table and
+ *     discover the second byte. Rinse and repeat for all blocks.
+ *
+ *     1 2 3 4 5 6 7 8
  *     A A A A A s e X
  *     ...
  *     s e c r e t s t
+ *
+ *     Next Block:
+ *
  *     1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
  *     A A A A A A A s e c r e t s X
  *     A A A A A A s e c r e t s t X
