@@ -25,9 +25,9 @@ func TestIsOracleEBC(t *testing.T) {
 	}
 }
 
-func TestGenerateLastByteDictionary(t *testing.T) {
-	result := GenerateLastByteDictionary(Oracle, 16)
-	t.Log("Last byte dict:", result[58])
+func TestGenerateByteLookupTable(t *testing.T) {
+	result := GenerateByteLookupTable(Oracle, []byte("AAAAAAA"), 0, 8)
+	t.Log(result)
 	if len(result) != 256 {
 		t.Error("Did not generate full dictionary from Oracle")
 	}

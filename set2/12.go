@@ -43,6 +43,19 @@
  *   5. Match the output of the one-byte-short input to one of the entries in
  *      your dictionary. You've now discovered the first byte of unknown-string.
  *   6. Repeat for the next byte.
+ *
+ * Visualization:
+ *
+ *     1 2 3 4 5 6 7 8
+ *     A A A A A A A X
+ *     A A A A A A s X
+ *     A A A A A s e X
+ *     ...
+ *     s e c r e t s t
+ *     1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
+ *     A A A A A A A s e c r e t s X
+ *     A A A A A A s e c r e t s t X
+ *     A A A A A s e c r e t s t u X
  */
 
 package set_two
@@ -109,20 +122,21 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	return EncryptAESECB(data, KEY)
 }
 
-// Brute forces the ASCII dictionary (0-255) of an ECB encryption oracle
-func GenerateLastByteDictionary(oracle EncryptionOracle, blockSize int) map[byte]byte {
+func GenerateByteLookupTable(oracle EncryptionOracle, prefix []byte, blockStart, blockEnd int) map[string]byte {
 	var i byte
-	result := make(map[byte]byte)
-	prefix := bytes.Repeat([]byte("A"), blockSize-1)
+	result := make(map[string]byte)
+
 	for i = 0; i <= 255; i++ {
-		lookup := append(prefix, i)
-		lookup, _ = Oracle(lookup)
-		result[i] = lookup[blockSize-1]
-		// If we don't break here, `i` will overflow back to zero and cause an infinite loop
+		known := append(prefix, i)
+		crypted, _ := Oracle(known)
+		shortBlock := string(crypted[blockStart:blockEnd])
+		result[shortBlock] = i
+		// We have to break here otherwise `i` will overflow and loop infinitely
 		if i == 255 {
 			break
 		}
 	}
+
 	return result
 }
 
@@ -133,15 +147,22 @@ func BreakECB(oracle EncryptionOracle) []byte {
 	emptyCipher, _ := Oracle([]byte{})
 	numOfBlocks := len(emptyCipher) / blockSize
 
-	lookup := GenerateLastByteDictionary(oracle, blockSize)
-
+	// TODO(dw): Cleanup
+	// TODO(dw): Can get rid of this and just track len(decrypted) < len(emptyCipher)
 	for block := 0; block < numOfBlocks; block++ {
 		blockStart := block * blockSize
-		lastByte := blockStart + blockSize - 1
+		blockEnd := blockStart + blockSize
+
 		for i := blockSize - 1; i >= 0; i-- {
-			prefix := bytes.Repeat([]byte("A"), blockStart+i)
-			encrypted, _ := Oracle(prefix)
-			decrypted = append(decrypted, lookup[encrypted[lastByte]])
+			bunchOfAs := bytes.Repeat([]byte("A"), i)
+			knownPrefix := append(bunchOfAs, decrypted...)
+			lookup := GenerateByteLookupTable(oracle, knownPrefix, blockStart, blockEnd)
+			// Now generate the actual encrypted block and look it up in our table
+			// We only use our padding here (bunchOfAs) to let the Oracle fill in the remaining bytes
+			// with the secret text and we can compare them against our lookup table.
+			encrypted, _ := Oracle(bunchOfAs)
+			encryptedBlock := string(encrypted[blockStart:blockEnd])
+			decrypted = append(decrypted, lookup[encryptedBlock])
 		}
 	}
 
