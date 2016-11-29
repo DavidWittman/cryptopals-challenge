@@ -46,7 +46,7 @@
  *
  * Notes:
  *
- *     1 2 3 4 5 6 7 8
+ *     0 1 2 3 4 5 6 7
  *     A A A A A A A X
  *
  *	   Generate a lookup table for all values of X, then run the Encryption Oracle
@@ -54,7 +54,7 @@
  *     Then lookup the block which the Oracle created in your lookup table and
  *     proceed to the next byte. Let's pretend our discovered byte was `s`:
  *
- *     1 2 3 4 5 6 7 8
+ *     0 1 2 3 4 5 6 7
  *     A A A A A A s X
  *
  *     Our new lookup table generates all values for X here, then we run the
@@ -62,17 +62,19 @@
  *     known letter `s`, and our mystery byte in 8. Now lookup in your table and
  *     discover the second byte. Rinse and repeat for all blocks.
  *
- *     1 2 3 4 5 6 7 8
+ *     0 1 2 3 4 5 6 7
  *     A A A A A s e X
  *     ...
  *     s e c r e t s t
  *
  *     Next Block:
  *
- *     1 2 3 4 5 6 7 8 9 0 1 2 3 4 5
- *     A A A A A A A s e c r e t s X
- *     A A A A A A s e c r e t s t X
- *     A A A A A s e c r e t s t u X
+ *     0 1 2 3 4 5 6 7  8 9 0 1 2 3 4 5
+ *     A A A A A A A s  e c r e t s t X
+ *     A A A A A A s e  c r e t s t u X
+ *     A A A A A s e c  r e t s t u f X
+ *	   ...
+ *     s e c r e t s t  u f f o o b a r
  */
 
 package set_two
@@ -85,11 +87,10 @@ import (
 	"strings"
 )
 
-var KEY []byte = []byte("YELLOW SUBMARINE")
+var KEY []byte
 
 type EncryptionOracle func([]byte) ([]byte, error)
 
-/*
 func init() {
 	var err error
 	KEY, err = GenerateRandomBytes(16)
@@ -97,7 +98,6 @@ func init() {
 		panic(err)
 	}
 }
-*/
 
 func DetermineBlockSize(oracle EncryptionOracle) int {
 	prevLen := 0

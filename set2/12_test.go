@@ -27,7 +27,6 @@ func TestIsOracleEBC(t *testing.T) {
 
 func TestGenerateByteLookupTable(t *testing.T) {
 	result := GenerateByteLookupTable(Oracle, []byte("AAAAAAA"), 0, 8)
-	t.Log(result)
 	if len(result) != 256 {
 		t.Error("Did not generate full dictionary from Oracle")
 	}
@@ -35,6 +34,5 @@ func TestGenerateByteLookupTable(t *testing.T) {
 
 func TestBreakECB(t *testing.T) {
 	result := BreakECB(Oracle)
-	//t.Log("BreakECB result: ", result)
-	t.Logf("BreakECB result: %s", result)
+	t.Logf("BreakECB result:\n%s", result)
 }
