@@ -89,7 +89,7 @@ import (
 
 var KEY []byte
 
-type EncryptionOracle func([]byte) ([]byte, error)
+type EncryptionOracle func([]byte) []byte
 
 func init() {
 	var err error
@@ -102,10 +102,7 @@ func init() {
 func DetermineBlockSize(oracle EncryptionOracle) int {
 	prevLen := 0
 	for i := 1; ; i++ {
-		result, err := oracle(bytes.Repeat([]byte("A"), i))
-		if err != nil {
-			panic(err)
-		}
+		result := oracle(bytes.Repeat([]byte("A"), i))
 		if len(result) > prevLen {
 			// Block size increased. Set prevLen if it's the first time,
 			// otherwise compute the difference in block sizes.
@@ -118,11 +115,11 @@ func DetermineBlockSize(oracle EncryptionOracle) int {
 }
 
 func IsOracleEBC(oracle EncryptionOracle, blockSize int) bool {
-	encrypted, _ := oracle(bytes.Repeat([]byte("A"), 1024))
+	encrypted := oracle(bytes.Repeat([]byte("A"), 1024))
 	return len(cryptopals.FindMatchingBlock(encrypted, blockSize)) > 0
 }
 
-func Oracle(data []byte) ([]byte, error) {
+func Oracle(data []byte) []byte {
 	unknownString := `Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXk
 gaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBq
 dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
@@ -131,27 +128,24 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	unknownBytes, err := ioutil.ReadAll(
 		base64.NewDecoder(base64.StdEncoding, unknownReader))
 	if err != nil {
-		return []byte{}, err
+		return []byte{}
 	}
 
 	data = append(data, unknownBytes...)
-
-	return EncryptAESECB(data, KEY)
+	result, _ := EncryptAESECB(data, KEY)
+	return result
 }
 
 func GenerateByteLookupTable(oracle EncryptionOracle, prefix []byte, blockStart, blockEnd int) map[string]byte {
 	var i byte
 	result := make(map[string]byte)
 
-	for i = 0; i <= 255; i++ {
+	// We only need 0-128 for most characters
+	for i = 0; i < 128; i++ {
 		known := append(prefix, i)
-		crypted, _ := Oracle(known)
-		shortBlock := string(crypted[blockStart:blockEnd])
-		result[shortBlock] = i
-		// We have to break here otherwise `i` will overflow and loop infinitely
-		if i == 255 {
-			break
-		}
+		shortBlock := Oracle(known)[blockStart:blockEnd]
+		// Correlate this block with the byte `i`
+		result[string(shortBlock)] = i
 	}
 
 	return result
@@ -161,25 +155,24 @@ func BreakECB(oracle EncryptionOracle) []byte {
 	var decrypted []byte
 
 	blockSize := DetermineBlockSize(oracle)
-	emptyCipher, _ := Oracle([]byte{})
-	numOfBlocks := len(emptyCipher) / blockSize
+	emptyCipherLen := len(Oracle([]byte{}))
 
-	// TODO(dw): Cleanup
-	// TODO(dw): Can get rid of this and just track len(decrypted) < len(emptyCipher)
-	for block := 0; block < numOfBlocks; block++ {
-		blockStart := block * blockSize
+	for len(decrypted) < emptyCipherLen {
+		blockStart := len(decrypted)
 		blockEnd := blockStart + blockSize
 
 		for i := blockSize - 1; i >= 0; i-- {
+			// Craft a string of every byte we know thus far, leaving the only unknown character
+			// as the last byte in a block.
 			bunchOfAs := bytes.Repeat([]byte("A"), i)
 			knownPrefix := append(bunchOfAs, decrypted...)
 			lookup := GenerateByteLookupTable(oracle, knownPrefix, blockStart, blockEnd)
+
 			// Now generate the actual encrypted block and look it up in our table
-			// We only use our padding here (bunchOfAs) to let the Oracle fill in the remaining bytes
+			// We use only our padding here (bunchOfAs) to let the Oracle fill in the remaining bytes
 			// with the secret text and we can compare them against our lookup table.
-			encrypted, _ := Oracle(bunchOfAs)
-			encryptedBlock := string(encrypted[blockStart:blockEnd])
-			decrypted = append(decrypted, lookup[encryptedBlock])
+			block := Oracle(bunchOfAs)[blockStart:blockEnd]
+			decrypted = append(decrypted, lookup[string(block)])
 		}
 	}
 

@@ -5,9 +5,9 @@ import (
 )
 
 func TestOracle(t *testing.T) {
-	_, err := Oracle([]byte("foo"))
-	if err != nil {
-		t.Error(err)
+	result := Oracle([]byte("foo"))
+	if len(result) == 0 {
+		t.Error("Oracle returned nothing!")
 	}
 }
 
@@ -27,7 +27,7 @@ func TestIsOracleEBC(t *testing.T) {
 
 func TestGenerateByteLookupTable(t *testing.T) {
 	result := GenerateByteLookupTable(Oracle, []byte("AAAAAAA"), 0, 8)
-	if len(result) != 256 {
+	if len(result) != 128 {
 		t.Error("Did not generate full dictionary from Oracle")
 	}
 }
