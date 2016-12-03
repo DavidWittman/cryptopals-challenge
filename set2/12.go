@@ -87,13 +87,13 @@ import (
 	"strings"
 )
 
-var KEY []byte
+var RANDOM_KEY []byte
 
 type EncryptionOracle func([]byte) []byte
 
 func init() {
 	var err error
-	KEY, err = GenerateRandomBytes(16)
+	RANDOM_KEY, err = GenerateRandomBytes(16)
 	if err != nil {
 		panic(err)
 	}
@@ -132,7 +132,7 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	}
 
 	data = append(data, unknownBytes...)
-	result, _ := EncryptAESECB(data, KEY)
+	result, _ := EncryptAESECB(data, RANDOM_KEY)
 	return result
 }
 

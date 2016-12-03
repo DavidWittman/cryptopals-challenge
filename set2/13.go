@@ -46,6 +46,16 @@
  *
  * Using only the user input to profile_for() (as an oracle to generate "valid"
  * ciphertexts) and the ciphertexts themselves, make a role=admin profile.
+ *
+ * Notes/Theories:
+ *
+ * Make an email long enough so that the last block is the value of the role:
+ *
+ *    |    block   |          |
+ *     uid=10&role= user
+ *
+ * Determine what an empty "admin" block looks like, then replace the last block
+ * with it.
  */
 
 package set_two
