@@ -49,3 +49,21 @@
  */
 
 package set_two
+
+import (
+	"fmt"
+	"strings"
+)
+
+func stripMetachars(s string) string {
+	metachars := []string{"&", "="}
+	for _, char := range metachars {
+		s = strings.Replace(s, char, "", -1)
+	}
+	return s
+}
+
+func ProfileFor(email string) string {
+	email = stripMetachars(email)
+	return fmt.Sprintf("email=%s&uid=10&role=user", email)
+}
