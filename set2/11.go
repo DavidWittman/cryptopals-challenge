@@ -71,8 +71,7 @@ func RandomlyEncryptECBOrCBC(data []byte) ([]byte, string, error) {
 }
 
 func DetectECBOrCBC(data []byte, keySize int) string {
-	match := cryptopals.FindMatchingBlock(data, keySize)
-	if len(match) > 0 {
+	if match := cryptopals.FindMatchingBlock(data, keySize); match >= 0 {
 		return "ecb"
 	}
 	return "cbc"

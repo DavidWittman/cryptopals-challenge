@@ -82,9 +82,10 @@ package set_two
 import (
 	"bytes"
 	"encoding/base64"
-	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 	"io/ioutil"
 	"strings"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 type EncryptionOracle func([]byte) []byte
@@ -106,7 +107,7 @@ func DetermineBlockSize(oracle EncryptionOracle) int {
 
 func IsOracleEBC(oracle EncryptionOracle, blockSize int) bool {
 	encrypted := oracle(bytes.Repeat([]byte("A"), 1024))
-	return len(cryptopals.FindMatchingBlock(encrypted, blockSize)) > 0
+	return cryptopals.FindMatchingBlock(encrypted, blockSize) >= 0
 }
 
 func Oracle(data []byte) []byte {

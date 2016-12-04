@@ -30,6 +30,7 @@ package set_two
 
 import (
 	"crypto/aes"
+
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 

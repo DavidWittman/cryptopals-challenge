@@ -36,7 +36,7 @@ func FindECBLine(filename string) string {
 			panic(err)
 		}
 
-		if len(cryptopals.FindMatchingBlock(cipher, 16)) > 0 {
+		if cryptopals.FindMatchingBlock(cipher, 16) >= 0 {
 			return string(cipher)
 		}
 	}
