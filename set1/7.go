@@ -17,26 +17,17 @@ You can obviously decrypt this using the OpenSSL command-line tool, but we're ha
 */
 
 import (
-	"crypto/aes"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 const KEY = "YELLOW SUBMARINE"
 
-func DecryptAES128ECB(filename string) string {
+func DecryptAESECBFile(filename string) string {
 	contents, err := cryptopals.ReadAllBase64(filename)
 	if err != nil {
 		panic(err)
 	}
 
-	block, err := aes.NewCipher([]byte(KEY))
-	if err != nil {
-		panic(err)
-	}
-
-	blockMode := cryptopals.NewECBDecrypter(block)
-	decrypted := make([]byte, len(contents))
-	blockMode.CryptBlocks(decrypted, contents)
-
+	decrypted, _ := cryptopals.DecryptAESECB([]byte(contents), []byte(KEY))
 	return string(decrypted)
 }

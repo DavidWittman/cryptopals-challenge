@@ -29,7 +29,6 @@ package set_two
 
 import (
 	"bytes"
-	"crypto/aes"
 	"crypto/rand"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
@@ -62,51 +61,21 @@ func bookendPad(data []byte, repeat byte) []byte {
 	return append(prefix, append(data, suffix...)...)
 }
 
-// TODO: Move to cryptopals
-func EncryptAESCBC(data, key, iv []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	data = PKCS7Pad(len(key), data)
-	blockMode := cryptopals.NewCBCEncrypter(block, iv)
-	encrypted := make([]byte, len(data))
-	blockMode.CryptBlocks(encrypted, data)
-
-	return encrypted, nil
-}
-
-// TODO: Move to cryptopals
-func EncryptAESECB(data, key []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	data = PKCS7Pad(len(key), data)
-	blockMode := cryptopals.NewECBEncrypter(block)
-	encrypted := make([]byte, len(data))
-	blockMode.CryptBlocks(encrypted, data)
-
-	return encrypted, nil
-}
-
 func RandomlyEncryptECBOrCBC(data []byte) ([]byte, string, error) {
 	var encrypted []byte
 	var err error
 
 	key, _ := GenerateRandomBytes(KEY_SIZE)
 
-	data = PKCS7Pad(len(key), bookendPad(data, 'Z'))
+	data = cryptopals.PKCS7Pad(len(key), bookendPad(data, 'Z'))
 
 	// "flip a coin" to determine if we should use ECB or CBC
 	if coinflip() {
 		iv, _ := GenerateRandomBytes(KEY_SIZE)
-		encrypted, err = EncryptAESCBC(data, key, iv)
+		encrypted, err = cryptopals.EncryptAESCBC(data, key, iv)
 		return encrypted, "cbc", err
 	} else {
-		encrypted, err = EncryptAESECB(data, key)
+		encrypted, err = cryptopals.EncryptAESECB(data, key)
 		return encrypted, "ecb", err
 	}
 }

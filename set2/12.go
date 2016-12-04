@@ -132,7 +132,7 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	}
 
 	data = append(data, unknownBytes...)
-	result, _ := EncryptAESECB(data, RANDOM_KEY)
+	result, _ := cryptopals.EncryptAESECB(data, RANDOM_KEY)
 	return result
 }
 
