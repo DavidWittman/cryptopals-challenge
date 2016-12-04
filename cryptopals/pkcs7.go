@@ -21,3 +21,8 @@ func PKCS7Pad(padLength int, block []byte) []byte {
 
 	return result
 }
+
+func PKCS7Unpad(data []byte) []byte {
+	padLength := int(data[len(data)-1])
+	return data[:len(data)-padLength]
+}

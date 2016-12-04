@@ -8,7 +8,7 @@ import (
 func TestPKCS7Pad(t *testing.T) {
 	for _, tt := range []struct {
 		n        int
-		in       []byte
+		input    []byte
 		expected []byte
 	}{
 		{8, []byte(""), []byte("\x08\x08\x08\x08\x08\x08\x08\x08")},
@@ -25,7 +25,7 @@ func TestPKCS7Pad(t *testing.T) {
 		{16, []byte("a"), []byte("a\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f\x0f")},
 		{20, []byte("YELLOW SUBMARINE"), []byte("YELLOW SUBMARINE\x04\x04\x04\x04")},
 	} {
-		result := PKCS7Pad(tt.n, tt.in)
+		result := PKCS7Pad(tt.n, tt.input)
 		if !bytes.Equal(result, tt.expected) {
 			t.Fatalf("Pad failed. Expected: %v Got: %v", tt.expected, result)
 		}
@@ -39,4 +39,27 @@ func TestPKCS7PadPanic(t *testing.T) {
 		}
 	}()
 	_ = PKCS7Pad(256, []byte("zomg"))
+}
+
+func TestPKCS7Unpad(t *testing.T) {
+	for _, tt := range []struct {
+		input    []byte
+		expected []byte
+	}{
+		{[]byte("\x08\x08\x08\x08\x08\x08\x08\x08"), []byte("")},
+		{[]byte("a\x07\x07\x07\x07\x07\x07\x07"), []byte("a")},
+		{[]byte("ab\x06\x06\x06\x06\x06\x06"), []byte("ab")},
+		{[]byte("abc\x05\x05\x05\x05\x05"), []byte("abc")},
+		{[]byte("abcd\x04\x04\x04\x04"), []byte("abcd")},
+		{[]byte("abcde\x03\x03\x03"), []byte("abcde")},
+		{[]byte("abcdef\x02\x02"), []byte("abcdef")},
+		{[]byte("abcdefg\x01"), []byte("abcdefg")},
+		{[]byte("abcdefgh\x08\x08\x08\x08\x08\x08\x08\x08"), []byte("abcdefgh")},
+	} {
+		result := PKCS7Unpad(tt.input)
+		if !bytes.Equal(result, tt.expected) {
+			t.Fatalf("Pad failed. Expected: %v Got: %v", tt.expected, result)
+		}
+	}
+
 }
