@@ -87,17 +87,7 @@ import (
 	"strings"
 )
 
-var RANDOM_KEY []byte
-
 type EncryptionOracle func([]byte) []byte
-
-func init() {
-	var err error
-	RANDOM_KEY, err = GenerateRandomBytes(16)
-	if err != nil {
-		panic(err)
-	}
-}
 
 func DetermineBlockSize(oracle EncryptionOracle) int {
 	prevLen := 0
@@ -132,7 +122,7 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	}
 
 	data = append(data, unknownBytes...)
-	result, _ := cryptopals.EncryptAESECB(data, RANDOM_KEY)
+	result, _ := cryptopals.EncryptAESECB(data, cryptopals.RANDOM_KEY)
 	return result
 }
 
@@ -176,5 +166,5 @@ func BreakECB(oracle EncryptionOracle) []byte {
 		}
 	}
 
-	return decrypted
+	return cryptopals.PKCS7Unpad(decrypted)
 }

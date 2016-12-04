@@ -130,5 +130,5 @@ func ProfileFor(email string) string {
 
 func ProfileOracle(email string) []byte {
 	user := NewUser(email)
-	return user.Encrypt(RANDOM_KEY)
+	return user.Encrypt(cryptopals.RANDOM_KEY)
 }

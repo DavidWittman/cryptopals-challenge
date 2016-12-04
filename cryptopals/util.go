@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+// A random 128 bit key, populated on package import in the init function below
+var RANDOM_KEY []byte
+
+func init() {
+	var err error
+	RANDOM_KEY, err = GenerateRandomBytes(16)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func ReadAllBase64(filename string) ([]byte, error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -42,6 +53,16 @@ func SplitBytes(buf []byte, length int) [][]byte {
 func RandomInt(min, max int) int {
 	rand.Seed(time.Now().Unix())
 	return rand.Intn(max-min) + min
+}
+
+// Generates `n` random bytes
+func GenerateRandomBytes(n int) ([]byte, error) {
+	result := make([]byte, n)
+	_, err := rand.Read(result)
+	if err != nil {
+		return []byte{}, err
+	}
+	return result, nil
 }
 
 // Finds a matching block of size `size` in `data`

@@ -29,7 +29,6 @@ package set_two
 
 import (
 	"bytes"
-	"crypto/rand"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
@@ -37,20 +36,11 @@ const KEY_SIZE = 16
 
 // Return true or false 50% of the time
 func coinflip() bool {
-	random, err := GenerateRandomBytes(1)
+	random, err := cryptopals.GenerateRandomBytes(1)
 	if err != nil {
 		panic(err)
 	}
 	return (random[0] & byte(1)) != byte(0)
-}
-
-func GenerateRandomBytes(n int) ([]byte, error) {
-	result := make([]byte, n)
-	_, err := rand.Read(result)
-	if err != nil {
-		return []byte{}, err
-	}
-	return result, nil
 }
 
 // Pad `data` with byte `repeat` 5 to 10 times (random, inclusive).
@@ -65,13 +55,13 @@ func RandomlyEncryptECBOrCBC(data []byte) ([]byte, string, error) {
 	var encrypted []byte
 	var err error
 
-	key, _ := GenerateRandomBytes(KEY_SIZE)
+	key, _ := cryptopals.GenerateRandomBytes(KEY_SIZE)
 
 	data = cryptopals.PKCS7Pad(len(key), bookendPad(data, 'Z'))
 
 	// "flip a coin" to determine if we should use ECB or CBC
 	if coinflip() {
-		iv, _ := GenerateRandomBytes(KEY_SIZE)
+		iv, _ := cryptopals.GenerateRandomBytes(KEY_SIZE)
 		encrypted, err = cryptopals.EncryptAESCBC(data, key, iv)
 		return encrypted, "cbc", err
 	} else {
