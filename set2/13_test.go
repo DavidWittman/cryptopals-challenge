@@ -34,3 +34,29 @@ func TestProfileFor(t *testing.T) {
 		t.Errorf("Profile incorrect: %s", result)
 	}
 }
+
+func TestEncryptDecryptUser(t *testing.T) {
+	key := []byte("YELLOW SUBMARINE")
+	user1 := NewUser("foo@example.com")
+	encrypted := user1.Encrypt(key)
+	user2 := DecryptNewUser(encrypted, key)
+
+	if user1.Uid != user2.Uid {
+		t.Errorf("Decrypted UID does not match: %s", user2.Uid)
+	}
+
+	if user1.Email != user2.Email {
+		t.Errorf("Decrypted email does not match: %s", user2.Email)
+	}
+
+	if user1.Role != user2.Role {
+		t.Errorf("Decrypted role does not match: %s", user2.Role)
+	}
+}
+
+func TestProfileOracle(t *testing.T) {
+	cipher := ProfileOracle("foo@example.com")
+	if len(cipher) == 0 {
+		t.Errorf("Ciphertext length is 0")
+	}
+}

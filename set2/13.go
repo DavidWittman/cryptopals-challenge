@@ -62,6 +62,9 @@ package set_two
 
 import (
 	"fmt"
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -73,7 +76,59 @@ func stripMetachars(s string) string {
 	return s
 }
 
+type User struct {
+	Email string
+	Uid   int
+	Role  string
+}
+
+func NewUser(email string) *User {
+	return &User{
+		Email: stripMetachars(email),
+		Uid:   10,
+		Role:  "user",
+	}
+}
+
+func (u *User) Encode() string {
+	return fmt.Sprintf("email=%s&uid=%d&role=%s", u.Email, u.Uid, u.Role)
+}
+
+func (u *User) Encrypt(key []byte) []byte {
+	encrypted, _ := cryptopals.EncryptAESECB([]byte(u.Encode()), key)
+	return encrypted
+}
+
+// Takes an encoded/encrypted user string and decrypts/decodes it
+func DecryptNewUser(cipher, key []byte) *User {
+	decrypted, err := cryptopals.DecryptAESECB(cipher, key)
+	if err != nil {
+		panic(err)
+	}
+
+	decoded, err := url.ParseQuery(string(decrypted))
+	if err != nil {
+		panic(err)
+	}
+
+	uid, err := strconv.Atoi(decoded["uid"][0])
+	if err != nil {
+		panic(err)
+	}
+
+	return &User{
+		Email: decoded["email"][0],
+		Uid:   uid,
+		Role:  decoded["role"][0],
+	}
+}
+
 func ProfileFor(email string) string {
-	email = stripMetachars(email)
-	return fmt.Sprintf("email=%s&uid=10&role=user", email)
+	user := NewUser(email)
+	return user.Encode()
+}
+
+func ProfileOracle(email string) []byte {
+	user := NewUser(email)
+	return user.Encrypt(RANDOM_KEY)
 }
