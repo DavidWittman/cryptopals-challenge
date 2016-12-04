@@ -1,6 +1,7 @@
 package set_two
 
 import (
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 	"strings"
 	"testing"
 )
@@ -58,5 +59,12 @@ func TestProfileOracle(t *testing.T) {
 	cipher := ProfileOracle("foo@example.com")
 	if len(cipher) == 0 {
 		t.Errorf("Ciphertext length is 0")
+	}
+}
+
+func TestBreakProfileOracle(t *testing.T) {
+	result := BreakProfileOracle()
+	if u := DecryptNewUser(result, cryptopals.RANDOM_KEY); u.Role != "admin" {
+		t.Errorf("Privileges not escalated to admin")
 	}
 }

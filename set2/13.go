@@ -61,6 +61,7 @@
 package set_two
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 	"net/url"
@@ -131,4 +132,36 @@ func ProfileFor(email string) string {
 func ProfileOracle(email string) []byte {
 	user := NewUser(email)
 	return user.Encrypt(cryptopals.RANDOM_KEY)
+}
+
+// BreakProfileOracle executes a privilege escalation attack
+// against ProfileOracle by crafting a valid AES block from the
+// ProfileOracle which contains the value of "admin" (plus pad)
+func BreakProfileOracle() []byte {
+	// Making an assumption here... not always realistic
+	blockSize := 16
+
+	// email=X&uid=10&role=user (19 chars to the u in user)
+	// We want to push 'user' to the start of the last block (index 32)
+	// So the email address must be 13 chars
+	email := "bob@56789.com"
+	cipher := ProfileOracle(email)
+	cipherTrimmed := cipher[:len(cipher)-blockSize]
+
+	// Now we need to generate a block that contains only 'admin'
+	padLength := blockSize - len("admin")
+	adminBlock := append([]byte("admin"),
+		bytes.Repeat([]byte{byte(padLength)}, padLength)...)
+
+	// The adminBlock needs to be in a block of its own so we can extract it,
+	// so make sure it starts at the start of the second block (index 16).
+	// There should be 10 characters supplied in the email before the block.
+	email = string(append([]byte("abcdefghij"), adminBlock...))
+	adminBlock = ProfileOracle(email)[16:32]
+
+	// Now join our original ciphertext with the last block removed
+	// and this new block which will set our role to 'admin'
+	adminUser := append(cipherTrimmed, adminBlock...)
+
+	return adminUser
 }
