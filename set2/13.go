@@ -61,7 +61,6 @@
 package set_two
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 	"net/url"
@@ -144,19 +143,17 @@ func BreakProfileOracle() []byte {
 	// email=X&uid=10&role=user (19 chars to the u in user)
 	// We want to push 'user' to the start of the last block (index 32)
 	// So the email address must be 13 chars
-	email := "bob@56789.com"
+	email := "bob@gmail.com"
 	cipher := ProfileOracle(email)
 	cipherTrimmed := cipher[:len(cipher)-blockSize]
 
 	// Now we need to generate a block that contains only 'admin'
-	padLength := blockSize - len("admin")
-	adminBlock := append([]byte("admin"),
-		bytes.Repeat([]byte{byte(padLength)}, padLength)...)
+	adminBlock := cryptopals.PKCS7Pad(blockSize, []byte("admin"))
 
 	// The adminBlock needs to be in a block of its own so we can extract it,
 	// so make sure it starts at the start of the second block (index 16).
 	// There should be 10 characters supplied in the email before the block.
-	email = string(append([]byte("abcdefghij"), adminBlock...))
+	email = string(append([]byte("bob@gm.com"), adminBlock...))
 	adminBlock = ProfileOracle(email)[16:32]
 
 	// Now join our original ciphertext with the last block removed
