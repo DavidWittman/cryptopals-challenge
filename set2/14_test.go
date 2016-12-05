@@ -4,11 +4,12 @@ import (
 	"testing"
 )
 
-func TestBreakHarderOracle(t *testing.T) {
-	_, err := BreakHarderOracle(HarderOracle)
+func TestBreakHarderECBOracle(t *testing.T) {
+	result, err := BreakHarderECBOracle(HarderOracle)
 	if err != nil {
 		t.Errorf("Error breaking harder oracle: %s", err)
 	}
+	t.Log(string(result))
 }
 
 func TestDetermineUnknownStringSize(t *testing.T) {

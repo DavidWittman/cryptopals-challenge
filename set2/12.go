@@ -134,7 +134,7 @@ func GenerateByteLookupTable(oracle EncryptionOracle, prefix []byte, blockStart,
 	// We only need 0-128 for most characters
 	for i = 0; i < 128; i++ {
 		known := append(prefix, i)
-		shortBlock := Oracle(known)[blockStart:blockEnd]
+		shortBlock := oracle(known)[blockStart:blockEnd]
 		// Correlate this block with the byte `i`
 		result[string(shortBlock)] = i
 	}
@@ -162,7 +162,7 @@ func BreakECB(oracle EncryptionOracle) []byte {
 			// Now generate the actual encrypted block and look it up in our table
 			// We use only our padding here (bunchOfAs) to let the Oracle fill in the remaining bytes
 			// with the secret text and we can compare them against our lookup table.
-			block := Oracle(bunchOfAs)[blockStart:blockEnd]
+			block := oracle(bunchOfAs)[blockStart:blockEnd]
 			decrypted = append(decrypted, lookup[string(block)])
 		}
 	}

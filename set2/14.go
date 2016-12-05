@@ -23,6 +23,7 @@ package set_two
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -53,29 +54,98 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 // Then we know that our input landed on a boundary and we can determine the
 // length of the unknown input.
 func DetermineUnknownStringSize(oracle EncryptionOracle, blockSize int) int {
-	var cipher []byte
-
-	input := bytes.Repeat([]byte("A"), blockSize*2)
-
-	for cipher = oracle(input); cryptopals.FindMatchingBlock(cipher, blockSize) == -1; cipher = oracle(input) {
-	}
+	cipher := EncryptUntilMatchingBlocks(oracle, []byte{}, blockSize)
 
 	// This gives us the start of our input block. Determine the size of the unknown
 	// string by chopping off our input string and the random bytes at the front of the cipher
 	index := cryptopals.FindMatchingBlock(cipher, blockSize)
-	unknownSize := len(cipher[index+len(input):])
+	unknownSize := len(cipher[index+(blockSize*2):])
 	return unknownSize
 }
 
-func BreakHarderOracle(oracle EncryptionOracle) ([]byte, error) {
-	// This is a little flawed; the block size detection will fail some small
-	// percentage of the time because the random pad will cause fluctuations
-	// in the length of the ciphertext.
-	blockSize := DetermineBlockSize(oracle)
-	blockSize += 1
+// Generate ciphers from oracle until we find one with a matching block
+func EncryptUntilMatchingBlocks(oracle EncryptionOracle, input []byte, blockSize int) []byte {
+	// Make sure it's actually ECB
+	if !IsOracleEBC(oracle, blockSize) {
+		panic("Provided Oracle is not ECB")
+	}
 
-	// This attack works by finding our payload in the output from the Oracle
-	// and then stripping out everything before it.
-	// Our attack payload should be at least 3 blocks long
-	return []byte{}, nil
+	// Add two identical blocks so we can locate our prefix
+	ecbTest := bytes.Repeat([]byte{0x01}, blockSize*2)
+	input = append(ecbTest, input...)
+
+	for {
+		cipher := oracle(input)
+		// It's important to find ADJACENT matching blocks, otherwise we
+		// could potentially match blocks with values we're seeding in to
+		// the Oracle to brute force the unknown text
+		if cryptopals.FindAdjacentMatchingBlocks(cipher, blockSize) != -1 {
+			return cipher
+		}
+	}
+}
+
+// Just like GenerateByteLookupTable fom ch12, but tests ECB
+func GenerateHarderLookupTable(oracle EncryptionOracle, prefix []byte, blockStart, blockEnd int) map[string]byte {
+	var i byte
+
+	result := make(map[string]byte)
+
+	blockSize := blockEnd - blockStart
+	if blockSize < 1 {
+		panic("Invalid block size")
+	}
+
+	for i = 0; i < 128; i++ {
+		input := append(prefix, i)
+
+		cipher := EncryptUntilMatchingBlocks(oracle, input, blockSize)
+		index := cryptopals.FindMatchingBlock(cipher, blockSize)
+
+		// Skip over our matching block and the short block offset
+		start := index + (blockSize * 2) + blockStart
+		end := start + blockSize
+		shortBlock := cipher[start:end]
+
+		result[string(shortBlock)] = i
+	}
+
+	return result
+}
+
+func BreakHarderECBOracle(oracle EncryptionOracle) ([]byte, error) {
+	var decrypted []byte
+
+	// TODO(dw): Should be detecting this
+	blockSize := 16
+	unknownLength := DetermineUnknownStringSize(oracle, blockSize)
+
+	for len(decrypted) < unknownLength {
+		blockStart := len(decrypted)
+		blockEnd := blockStart + blockSize
+
+		for i := blockSize - 1; i >= 0; i-- {
+			bunchOfBs := bytes.Repeat([]byte("B"), i)
+			knownPrefix := append(bunchOfBs, decrypted...)
+			lookup := GenerateHarderLookupTable(oracle, knownPrefix, blockStart, blockEnd)
+
+			// TODO(dW): Can modify this function to just return everything after the matching blocks
+			cipher := EncryptUntilMatchingBlocks(oracle, bunchOfBs, blockSize)
+			index := cryptopals.FindMatchingBlock(cipher, blockSize)
+
+			// Skip over matching block and the short block offset
+			start := index + (blockSize * 2) + blockStart
+			end := start + blockSize
+			block := cipher[start:end]
+
+			decrypted = append(decrypted, lookup[string(block)])
+
+			if lookup[string(block)] == 0 {
+				return decrypted, nil
+			}
+			fmt.Println(string(decrypted), len(decrypted))
+		}
+	}
+
+	return cryptopals.PKCS7Unpad(decrypted), nil
 }

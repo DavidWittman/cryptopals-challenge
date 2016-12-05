@@ -83,3 +83,18 @@ func FindMatchingBlock(data []byte, size int) int {
 
 	return -1
 }
+
+// TODO(dw): DRY
+// Finds a matching block of size `size` in `data`
+// Returns the index of the first matching block, -1 if not found
+func FindAdjacentMatchingBlocks(data []byte, size int) int {
+	chunks := SplitBytes(data, size)
+
+	for i := 0; i < len(chunks)-1; i++ {
+		if bytes.Equal(chunks[i], chunks[i+1]) {
+			return i * size
+		}
+	}
+
+	return -1
+}
