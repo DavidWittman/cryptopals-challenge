@@ -53,15 +53,20 @@ dXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK`
 	return result
 }
 
-// Finds the position of our controlled input in the Oracle's output
-// This is done by creating a block of repeating characters 2 blocks
-// in length and increasing the size until we find a repeating block.
-func FindStartOfInput(oracle EncryptionOracle, blockSize int) int {
-	for i := blockSize * 2; i < blockSize*3; i++ {
-		input := bytes.Repeat([]byte{0x01}, i)
+// Determines the length oracle's random prefix (if any).
+// This is done by creating an identity block of random bytes, duplicating
+// it, and then prefixing it with bytes until we are block-aligned.
+// Returns -1 if there is an error.
+func FindRandomPrefixLength(oracle EncryptionOracle, blockSize int) int {
+	// Use a random ID block otherwise we could match
+	// some padding bytes at the end of the input
+	idBlock, _ := cryptopals.GenerateRandomBytes(blockSize)
+
+	for i := 0; i < blockSize; i++ {
+		input := append(bytes.Repeat([]byte{255}, i), bytes.Repeat(idBlock, 2)...)
 		cipher := oracle(input)
 		if index := cryptopals.FindMatchingBlock(cipher, blockSize); index != -1 {
-			return index - (i % blockSize)
+			return index - i
 		}
 	}
 
@@ -72,7 +77,7 @@ func BreakHarderECBOracle(oracle EncryptionOracle) ([]byte, error) {
 	var decrypted []byte
 
 	blockSize := DetermineBlockSize(oracle)
-	randomPrefixLength := FindStartOfInput(oracle, blockSize)
+	randomPrefixLength := FindRandomPrefixLength(oracle, blockSize)
 	// The length of our unknown bytes at the end of the Oracle output
 	unknownLength := len(oracle([]byte{})) - randomPrefixLength
 
@@ -95,6 +100,7 @@ func BreakHarderECBOracle(oracle EncryptionOracle) ([]byte, error) {
 			block := cipher[blockStart:blockEnd]
 
 			decrypted = append(decrypted, lookup[string(block)])
+
 			if len(decrypted) == unknownLength {
 				break
 			}

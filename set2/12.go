@@ -146,7 +146,7 @@ func BreakECB(oracle EncryptionOracle) []byte {
 	var decrypted []byte
 
 	blockSize := DetermineBlockSize(oracle)
-	emptyCipherLen := len(Oracle([]byte{}))
+	emptyCipherLen := len(oracle([]byte{}))
 
 	for len(decrypted) < emptyCipherLen {
 		blockStart := len(decrypted)
