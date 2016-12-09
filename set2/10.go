@@ -49,5 +49,5 @@ func DecryptFileCBC(filename string, key, iv []byte) ([]byte, error) {
 	decrypted := make([]byte, len(contents))
 	blockMode.CryptBlocks(decrypted, contents)
 
-	return cryptopals.PKCS7Unpad(decrypted), nil
+	return cryptopals.MaybePKCS7Unpad(decrypted), nil
 }

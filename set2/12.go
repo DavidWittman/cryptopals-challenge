@@ -167,5 +167,5 @@ func BreakECB(oracle EncryptionOracle) []byte {
 		}
 	}
 
-	return cryptopals.PKCS7Unpad(decrypted)
+	return cryptopals.MaybePKCS7Unpad(decrypted)
 }

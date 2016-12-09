@@ -48,3 +48,12 @@ func IsPKCS7Padded(data []byte) bool {
 
 	return bytes.Compare(pad, bytes.Repeat([]byte{byte(last)}, last)) == 0
 }
+
+// Tries to PKCS7 unpad. If it fails, it just returns the original input
+func MaybePKCS7Unpad(data []byte) []byte {
+	unpadded, err := PKCS7Unpad(data)
+	if err != nil {
+		return data
+	}
+	return unpadded
+}
