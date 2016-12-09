@@ -17,6 +17,19 @@ func DecryptAESECB(cipher, key []byte) ([]byte, error) {
 	return MaybePKCS7Unpad(decrypted), nil
 }
 
+func DecryptAESCBC(cipher, key, iv []byte) ([]byte, error) {
+	block, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		return []byte{}, err
+	}
+
+	blockMode := NewCBCDecrypter(block, iv)
+	decrypted := make([]byte, len(cipher))
+	blockMode.CryptBlocks(decrypted, cipher)
+
+	return MaybePKCS7Unpad(decrypted), nil
+}
+
 func EncryptAESCBC(data, key, iv []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {

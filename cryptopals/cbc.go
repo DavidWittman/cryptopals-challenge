@@ -56,6 +56,8 @@ func (x *cbcDecrypter) CryptBlocks(dst, src []byte) {
 }
 
 func (x *cbcEncrypter) CryptBlocks(dst, src []byte) {
+	tmp := make([]byte, x.blockSize)
+
 	if len(src)%x.blockSize != 0 {
 		panic("crypto/cipher: input not full blocks")
 	}
@@ -63,11 +65,12 @@ func (x *cbcEncrypter) CryptBlocks(dst, src []byte) {
 		panic("crypto/cipher: output smaller than input")
 	}
 	for len(src) > 0 {
-		err := FixedXOR(src[:x.blockSize], x.iv)
+		copy(tmp, src[:x.blockSize])
+		err := FixedXOR(tmp, x.iv)
 		if err != nil {
 			panic(err)
 		}
-		x.b.Encrypt(dst, src[:x.blockSize])
+		x.b.Encrypt(dst, tmp)
 		// use the ciphertext (from dst) as the iv for the next block
 		x.iv = dst[:x.blockSize]
 		src = src[x.blockSize:]
