@@ -14,7 +14,12 @@ func DecryptAESECB(cipher, key []byte) ([]byte, error) {
 	decrypted := make([]byte, len(cipher))
 	blockMode.CryptBlocks(decrypted, cipher)
 
-	return PKCS7Unpad(decrypted), nil
+	unpadded, err := PKCS7Unpad(decrypted)
+	if err != nil {
+		return decrypted, nil
+	}
+
+	return unpadded, nil
 }
 
 func EncryptAESCBC(data, key, iv []byte) ([]byte, error) {

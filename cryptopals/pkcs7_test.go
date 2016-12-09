@@ -27,7 +27,7 @@ func TestPKCS7Pad(t *testing.T) {
 	} {
 		result := PKCS7Pad(tt.n, tt.input)
 		if !bytes.Equal(result, tt.expected) {
-			t.Fatalf("Pad failed. Expected: %v Got: %v", tt.expected, result)
+			t.Errorf("Pad failed. Expected: %v Got: %v", tt.expected, result)
 		}
 	}
 }
@@ -56,9 +56,39 @@ func TestPKCS7Unpad(t *testing.T) {
 		{[]byte("abcdefg\x01"), []byte("abcdefg")},
 		{[]byte("abcdefgh\x08\x08\x08\x08\x08\x08\x08\x08"), []byte("abcdefgh")},
 	} {
-		result := PKCS7Unpad(tt.input)
+		result, _ := PKCS7Unpad(tt.input)
 		if !bytes.Equal(result, tt.expected) {
-			t.Fatalf("Pad failed. Expected: %v Got: %v", tt.expected, result)
+			t.Errorf("Pad failed. Expected: %v Got: %v", tt.expected, result)
+		}
+	}
+
+}
+
+func TestIsPKCS7Padded(t *testing.T) {
+	for _, tt := range []struct {
+		input    []byte
+		expected bool
+	}{
+		{[]byte("\x08\x08\x08\x08\x08\x08\x08\x08"), true},
+		{[]byte("a\x07\x07\x07\x07\x07\x07\x07"), true},
+		{[]byte("ab\x06\x06\x06\x06\x06\x06"), true},
+		{[]byte("abc\x05\x05\x05\x05\x05"), true},
+		{[]byte("abcd\x04\x04\x04\x04"), true},
+		{[]byte("abcde\x03\x03\x03"), true},
+		{[]byte("abcdef\x02\x02"), true},
+		{[]byte("abcdefg\x01"), true},
+		{[]byte("abcdefgh\x08\x08\x08\x08\x08\x08\x08\x08"), true},
+		{[]byte("abcdefg\x01\x01"), false},
+		{[]byte("abcdefg\x02"), false},
+		{[]byte("abcdefga"), false},
+		{[]byte("abcdef\x01"), false}, // Uneven
+		{[]byte("abcdefg\x03\x02\x03"), false},
+		{[]byte("abcdefg\x01a\x03"), false},
+		{[]byte("abcdefg\x01\x01\x03"), false},
+	} {
+		result := IsPKCS7Padded(tt.input)
+		if result != tt.expected {
+			t.Errorf("Pad detection failed for %v.\tExpected: %v, Got: %v", tt.input, tt.expected, result)
 		}
 	}
 
