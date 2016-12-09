@@ -2,7 +2,6 @@ package cryptopals
 
 import (
 	"bytes"
-	"fmt"
 	"testing"
 )
 
@@ -11,7 +10,6 @@ func TestAESCBCEncryptDecrypt(t *testing.T) {
 	key := RANDOM_KEY
 	iv := []byte("YELLOW SUBMARINE")
 
-	fmt.Println(string(input))
 	encrypted, _ := EncryptAESCBC(input, key, iv)
 	decrypted, _ := DecryptAESCBC(encrypted, key, iv)
 
