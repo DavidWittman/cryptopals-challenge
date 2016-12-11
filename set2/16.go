@@ -47,15 +47,21 @@ package set_two
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 var iv []byte = []byte("YELLOW SUBMARINE")
 
+// Quotes out semi-colons and equals signs
+func sanitizeInput(input string) string {
+	return strings.Replace(strings.Replace(input, ";", "\";\"", -1), "=", "\"=\"", -1)
+}
+
 func EncryptedComment(input string) []byte {
+	input = sanitizeInput(input)
 	plaintext := fmt.Sprintf("comment1=cooking%%20MCs;userdata=%s;comment2=%%20like%%20a%%20pound%%20of%%20bacon", input)
-	// TODO(dw): "quote out the ';' and '=' characters". Whatever that means.
 	encrypted, err := cryptopals.EncryptAESCBC([]byte(plaintext), cryptopals.RANDOM_KEY, iv)
 	if err != nil {
 		panic(err)
@@ -64,6 +70,16 @@ func EncryptedComment(input string) []byte {
 }
 
 func DecryptCommentAndCheckAdmin(input []byte) (bool, error) {
-	_, err := cryptopals.DecryptAESCBC(input, cryptopals.RANDOM_KEY, iv)
-	return false, err
+	adminString := ";admin=true;"
+	decrypted, err := cryptopals.DecryptAESCBC(input, cryptopals.RANDOM_KEY, iv)
+	if err != nil {
+		return false, err
+	}
+	return strings.Contains(string(decrypted), adminString), nil
+}
+
+func BitflipInjectCBC(inject string, ciphertext []byte) []byte {
+	// Thoghts: flip bits in the ciphertext of the first block which will
+	// XOR with (known from the string) bytes in the second block to produce ";admin=true;"
+	return []byte{}
 }
