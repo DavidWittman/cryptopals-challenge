@@ -61,3 +61,39 @@
  */
 
 package set_three
+
+import (
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
+var iv = []byte("YELLOW SUBMARINE")
+
+func EncryptRandomString() []byte {
+	possibilities := []string{
+		"MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=",
+		"MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=",
+		"MDAwMDAyUXVpY2sgdG8gdGhlIHBvaW50LCB0byB0aGUgcG9pbnQsIG5vIGZha2luZw==",
+		"MDAwMDAzQ29va2luZyBNQydzIGxpa2UgYSBwb3VuZCBvZiBiYWNvbg==",
+		"MDAwMDA0QnVybmluZyAnZW0sIGlmIHlvdSBhaW4ndCBxdWljayBhbmQgbmltYmxl",
+		"MDAwMDA1SSBnbyBjcmF6eSB3aGVuIEkgaGVhciBhIGN5bWJhbA==",
+		"MDAwMDA2QW5kIGEgaGlnaCBoYXQgd2l0aCBhIHNvdXBlZCB1cCB0ZW1wbw==",
+		"MDAwMDA3SSdtIG9uIGEgcm9sbCwgaXQncyB0aW1lIHRvIGdvIHNvbG8=",
+		"MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=",
+		"MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93",
+	}
+
+	i := cryptopals.RandomInt(0, len(possibilities)-1)
+	encrypted, err := cryptopals.EncryptAESCBC([]byte(possibilities[i]), cryptopals.RANDOM_KEY, iv)
+	if err != nil {
+		panic(err)
+	}
+	return encrypted
+}
+
+func PaddingOracle(ciphertext []byte) bool {
+	decrypted, err := cryptopals.DecryptAESCBC(ciphertext, cryptopals.RANDOM_KEY, iv)
+	if err != nil {
+		panic(err)
+	}
+	return cryptopals.IsPKCS7Padded(decrypted)
+}
