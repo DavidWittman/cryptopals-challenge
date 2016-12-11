@@ -66,6 +66,8 @@ import (
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
+type PaddingOracle func([]byte) bool
+
 var iv = []byte("YELLOW SUBMARINE")
 
 func EncryptRandomString() []byte {
@@ -82,7 +84,8 @@ func EncryptRandomString() []byte {
 		"MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93",
 	}
 
-	i := cryptopals.RandomInt(0, len(possibilities)-1)
+	//i := cryptopals.RandomInt(0, len(possibilities)-1)
+	i := 0
 	encrypted, err := cryptopals.EncryptAESCBC([]byte(possibilities[i]), cryptopals.RANDOM_KEY, iv)
 	if err != nil {
 		panic(err)
@@ -90,10 +93,96 @@ func EncryptRandomString() []byte {
 	return encrypted
 }
 
-func PaddingOracle(ciphertext []byte) bool {
+func CBCPaddingOracle(ciphertext []byte) bool {
 	decrypted, err := cryptopals.DecryptAESCBC(ciphertext, cryptopals.RANDOM_KEY, iv)
 	if err != nil {
 		panic(err)
 	}
 	return cryptopals.IsPKCS7Padded(decrypted)
+}
+
+func generateInjectPad(i2 []byte, padLength, blockSize int) {
+
+}
+
+/* Brute force the plaintext of C2 by exploiting the padding oracle
+ *
+ *  Let:
+ *      C1, C2   Ciphertext blocks 1 and 2
+ *      C1'      The block we are injecting into the padding oracle to determine
+ *               values in P2
+ *      I2       Intermediate block 2. This is the decrypted block 2 _before_
+ *               it is XORed with C1.
+ *      P2       Plaintext block 2
+ *
+ *  1. Generate a random injection block, C1', and starting with the last byte
+ *     try all possible values until the PaddingOracle returns true.
+ *
+ *     i.e. C1'[15] ^ I2[15] == 0x01
+ *
+ *  2. We can now determine I2[15] by XORing our known values:
+ *
+ *         I2[15] = C1'[15] ^ 0x01
+ *
+ *  3. Which now allows us to determine the plaintext:
+ *
+ *         P2[15] = C1[15] ^ I2[15]
+ *
+ *  4. Do the same thing for the remaining bytes in P2. Start by determining
+ *     what we must set C1'[i] should be set to to make P2'[i] equal the
+ *     correct padding value.
+ *
+ *         C1'[15] = I2[15] ^ 0x02
+ */
+func BruteForceBlock(c1, c2 []byte, oracle PaddingOracle) []byte {
+	if len(c1) != len(c2) {
+		panic("Block lengths do not match")
+	}
+	blockSize := len(c2)
+
+	// This is the block which we will be injecting as C1'
+	inject, _ := cryptopals.GenerateRandomBytes(blockSize)
+
+	// The intermediate block which is XORed with the decrypted text
+	i2 := make([]byte, blockSize)
+
+	// The result
+	plaintext := make([]byte, blockSize)
+
+	for i := blockSize - 1; i >= 0; i-- {
+		padLength := blockSize - (i % blockSize)
+		// Generate values for inject[i] until we find a valid pad
+		for j := 0; j < 256; j++ {
+			inject[i] = byte(j)
+			if oracle(append(inject, c2...)) {
+				// XOR the injected byte with the correct pad value (length)
+				// to determine the intermediate value
+				i2[i] = byte(j ^ padLength)
+				// Now that we know the intermediate value and the
+				// ciphertext of the preceding block, we can determine
+				// the plaintext value
+				plaintext[i] = i2[i] ^ c1[i]
+				// Prepare injection block for next pad
+				for k := padLength; k > 0; k-- {
+					inject[blockSize-k] = i2[blockSize-k] ^ byte(padLength+1)
+				}
+
+				break
+			}
+		}
+	}
+
+	return plaintext
+}
+
+// We can use the padding oracle and some intercepted ciphertext to manipulate
+// inputs of blocks until they yield padded plaintext.
+func BruteForcePaddingOracle(ciphertext []byte, oracle PaddingOracle) []byte {
+	var result []byte
+	blockSize := 16
+	blocks := cryptopals.SplitBytes(ciphertext, blockSize)
+	for i := 1; i < len(blocks); i++ {
+		result = append(result, BruteForceBlock(blocks[i-1], blocks[i], oracle)...)
+	}
+	return result
 }
