@@ -101,8 +101,24 @@ func CBCPaddingOracle(ciphertext []byte) bool {
 	return cryptopals.IsPKCS7Padded(decrypted)
 }
 
-func generateInjectPad(i2 []byte, padLength, blockSize int) {
+// Create a byte slice which when XORed against i2, produces
+// padLength bytes at the end of the result which are one byte
+// short of making a full PKCS7 pad.
+func generateInjectionPad(i2 []byte, padLength int) []byte {
+	blockSize := len(i2)
+	result, _ := cryptopals.GenerateRandomBytes(blockSize)
 
+	if padLength < 1 {
+		panic("generateInjectionPad: invalid padLength")
+	}
+
+	// Set all the bytes to padLength + 1
+	// i.e. If we're padding 3 bytes, we want the last 4 bytes to be 0x04
+	for i := 1; i <= padLength; i++ {
+		result[blockSize-i] = i2[blockSize-i] ^ byte(padLength+1)
+	}
+
+	return result
 }
 
 /* Brute force the plaintext of C2 by exploiting the padding oracle
@@ -162,10 +178,7 @@ func BruteForceBlock(c1, c2 []byte, oracle PaddingOracle) []byte {
 				// ciphertext of the preceding block, we can determine
 				// the plaintext value
 				plaintext[i] = i2[i] ^ c1[i]
-				// Prepare injection block for next pad
-				for k := padLength; k > 0; k-- {
-					inject[blockSize-k] = i2[blockSize-k] ^ byte(padLength+1)
-				}
+				inject = generateInjectionPad(i2, padLength)
 
 				break
 			}
