@@ -78,8 +78,41 @@ func DecryptCommentAndCheckAdmin(input []byte) (bool, error) {
 	return strings.Contains(string(decrypted), adminString), nil
 }
 
-func BitflipInjectCBC(inject string, ciphertext []byte) []byte {
-	// Thoghts: flip bits in the ciphertext of the first block which will
-	// XOR with (known from the string) bytes in the second block to produce ";admin=true;"
-	return []byte{}
+func BitflipInjectCBC(inject, ciphertext []byte) ([]byte, error) {
+	/*
+	 * Thoughts: flip bits in the ciphertext of the first block which will
+	 * XOR with (known from the string) bytes in the second block to produce ";admin=true;"
+	 *
+	 * The second block is:
+	 *
+	 *     %20MCs;userdata=
+	 *
+	 * XOR this with the `inject` string (e.g. ";admin=true;lol=", and then set the first
+	 * block of the ciphertext to that value.
+	 *
+	 */
+
+	blockSize := 16
+	secondBlock := []byte("%20MCs;userdata=")
+
+	if len(inject) != len(secondBlock) {
+		return []byte{}, fmt.Errorf("Invalid injection bytes. Should be %d bytes in length.", len(secondBlock))
+	}
+
+	// XOR the plaintext of the second block with its ciphertext to determine the encrypted value (w/o XOR)
+	// Then XOR that block with the injection block to find out what we should set our ciphertext to
+	if err := cryptopals.FixedXOR(secondBlock, ciphertext[blockSize:blockSize*2]); err != nil {
+		return []byte{}, err
+	}
+
+	if err := cryptopals.FixedXOR(inject, secondBlock); err != nil {
+		return []byte{}, err
+	}
+
+	fmt.Println(inject)
+	fmt.Println(ciphertext[:blockSize])
+	copy(ciphertext[:blockSize], inject)
+	fmt.Println(ciphertext[:blockSize])
+
+	return ciphertext, nil
 }

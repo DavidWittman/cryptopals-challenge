@@ -33,5 +33,17 @@ func TestDecryptCommentAndCheckAdmin(t *testing.T) {
 }
 
 func TestBitflipInjectCBC(t *testing.T) {
-
+	inject := []byte(";admin=true;lol=")
+	ciphertext := EncryptedComment("ohai")
+	result, err := BitflipInjectCBC(inject, ciphertext)
+	if err != nil {
+		t.Errorf("Error injecting bytes to ciphertext: %s", err)
+	}
+	isAdmin, err := DecryptCommentAndCheckAdmin(result)
+	if err != nil {
+		t.Errorf("Error decrypted ciphertext: %s", err)
+	}
+	if !isAdmin {
+		t.Errorf("Bitflip injection failed")
+	}
 }
