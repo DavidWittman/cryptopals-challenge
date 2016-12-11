@@ -13,7 +13,7 @@ func TestAESCBCEncryptDecrypt(t *testing.T) {
 	encrypted, _ := EncryptAESCBC(input, key, iv)
 	decrypted, _ := DecryptAESCBC(encrypted, key, iv)
 
-	if bytes.Compare(decrypted, input) != 0 {
+	if bytes.Compare(MaybePKCS7Unpad(decrypted), input) != 0 {
 		t.Errorf("Encryption/decryption mismatch:\n%s\n%s", decrypted, input)
 	}
 }

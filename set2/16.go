@@ -75,6 +75,7 @@ func DecryptCommentAndCheckAdmin(input []byte) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	decrypted = cryptopals.MaybePKCS7Unpad(decrypted)
 	return strings.Contains(string(decrypted), adminString), nil
 }
 
