@@ -51,13 +51,19 @@ import (
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
+var iv []byte = []byte("YELLOW SUBMARINE")
+
 func EncryptedComment(input string) []byte {
 	plaintext := fmt.Sprintf("comment1=cooking%%20MCs;userdata=%s;comment2=%%20like%%20a%%20pound%%20of%%20bacon", input)
 	// TODO(dw): "quote out the ';' and '=' characters". Whatever that means.
-	iv, _ := cryptopals.GenerateRandomBytes(len(cryptopals.RANDOM_KEY))
 	encrypted, err := cryptopals.EncryptAESCBC([]byte(plaintext), cryptopals.RANDOM_KEY, iv)
 	if err != nil {
 		panic(err)
 	}
 	return encrypted
+}
+
+func DecryptCommentAndCheckAdmin(input []byte) (bool, error) {
+	_, err := cryptopals.DecryptAESCBC(input, cryptopals.RANDOM_KEY, iv)
+	return false, err
 }
