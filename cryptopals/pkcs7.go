@@ -40,7 +40,7 @@ func IsPKCS7Padded(data []byte) bool {
 	}
 
 	last := int(data[len(data)-1])
-	if last > len(data) {
+	if last == 0 || last > len(data) {
 		return false
 	}
 

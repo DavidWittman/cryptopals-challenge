@@ -80,6 +80,7 @@ func TestIsPKCS7Padded(t *testing.T) {
 		{[]byte("abcdefgh\x08\x08\x08\x08\x08\x08\x08\x08"), true},
 		{[]byte("abcdefg\x01\x01"), false},
 		{[]byte("abcdefg\x02"), false},
+		{[]byte("abcdefg\x00"), false},
 		{[]byte("abcdefga"), false},
 		{[]byte("abcdef\x01"), false}, // Uneven
 		{[]byte("abcdefg\x03\x02\x03"), false},
