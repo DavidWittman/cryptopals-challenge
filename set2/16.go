@@ -78,41 +78,47 @@ func DecryptCommentAndCheckAdmin(input []byte) (bool, error) {
 	return strings.Contains(string(decrypted), adminString), nil
 }
 
-func BitflipInjectCBC(inject, ciphertext []byte) ([]byte, error) {
-	/*
-	 * Thoughts: flip bits in the ciphertext of the first block which will
-	 * XOR with (known from the string) bytes in the second block to produce ";admin=true;"
-	 *
-	 * The second block is:
-	 *
-	 *     %20MCs;userdata=
-	 *
-	 * XOR this with the `inject` string (e.g. ";admin=true;lol=", and then set the first
-	 * block of the ciphertext to that value.
-	 *
-	 */
-
+// Inject `;admin=true;` into an encrypted comment and return the ciphertext
+//
+// To decrypt CBC, the ciphertext of the first block is XORed against the
+// decrypted second block to produce the plaintext.
+//
+// E2 = Encrypted second block
+// C1 = Ciphertext of 1st block
+// P2 = Plaintext of second block
+//
+// P2 = E2 ^ C1
+//
+// Since we know P2 and C1, we can XOR those together to find E2.
+//
+// E2 = P2 ^ C1
+//
+// Then we just XOR the encrypted second block (E2) with the block we wish to
+// inject as C1'.
+//
+// C1' = Modified ciphertext block; this XORs with E2 to inject our block
+//
+// C1' = E2 ^ []byte(";admin=true;lol=")
+//
+// Then, when decrypting, C1' is XORed against E2 to generate our string:
+//
+// C1' ^ E2 = ";admin=true;lol="
+func BitflipInjectAdmin(ciphertext []byte) ([]byte, error) {
 	blockSize := 16
+	inject := []byte(";admin=true;lol=")
 	secondBlock := []byte("%20MCs;userdata=")
 
-	if len(inject) != len(secondBlock) {
-		return []byte{}, fmt.Errorf("Invalid injection bytes. Should be %d bytes in length.", len(secondBlock))
-	}
-
-	// XOR the plaintext of the second block with its ciphertext to determine the encrypted value (w/o XOR)
-	// Then XOR that block with the injection block to find out what we should set our ciphertext to
-	if err := cryptopals.FixedXOR(secondBlock, ciphertext[blockSize:blockSize*2]); err != nil {
+	// XOR the plaintext of the second block with the ciphertext of the first
+	// block to determine the encrypted value without the CBC XOR
+	if err := cryptopals.FixedXOR(secondBlock, ciphertext[:blockSize]); err != nil {
 		return []byte{}, err
 	}
 
+	// XOR the encrypted block with the injected admin block to find out what we
+	// should set our ciphertext block to.
 	if err := cryptopals.FixedXOR(inject, secondBlock); err != nil {
 		return []byte{}, err
 	}
 
-	fmt.Println(inject)
-	fmt.Println(ciphertext[:blockSize])
-	copy(ciphertext[:blockSize], inject)
-	fmt.Println(ciphertext[:blockSize])
-
-	return ciphertext, nil
+	return append(inject, ciphertext[blockSize:]...), nil
 }

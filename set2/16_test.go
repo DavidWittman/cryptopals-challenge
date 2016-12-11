@@ -32,10 +32,9 @@ func TestDecryptCommentAndCheckAdmin(t *testing.T) {
 	}
 }
 
-func TestBitflipInjectCBC(t *testing.T) {
-	inject := []byte(";admin=true;lol=")
+func TestBitflipInjectAdmin(t *testing.T) {
 	ciphertext := EncryptedComment("ohai")
-	result, err := BitflipInjectCBC(inject, ciphertext)
+	result, err := BitflipInjectAdmin(ciphertext)
 	if err != nil {
 		t.Errorf("Error injecting bytes to ciphertext: %s", err)
 	}
