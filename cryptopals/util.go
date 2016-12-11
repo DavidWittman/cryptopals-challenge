@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -37,6 +38,15 @@ func ReadAllBase64(filename string) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+func ReadBase64String(input string) (string, error) {
+	decoder := base64.NewDecoder(base64.StdEncoding, strings.NewReader(input))
+	decoded, err := ioutil.ReadAll(decoder)
+	if err != nil {
+		return "", err
+	}
+	return string(decoded), nil
 }
 
 // Splits a byte slice into length chunks

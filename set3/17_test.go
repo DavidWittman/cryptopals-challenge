@@ -21,8 +21,13 @@ func TestCBCPaddingOracle(t *testing.T) {
 
 func TestBruteForcePaddingOracle(t *testing.T) {
 	encrypted := EncryptRandomString()
-	t.Logf("%v", BruteForcePaddingOracle(encrypted, CBCPaddingOracle))
-	t.Logf("%s", BruteForcePaddingOracle(encrypted, CBCPaddingOracle))
+	paddedResult := BruteForcePaddingOracle(encrypted, CBCPaddingOracle)
+	base64Result := string(cryptopals.MaybePKCS7Unpad(paddedResult))
+	result, err := cryptopals.ReadBase64String(base64Result)
+	if err != nil {
+		t.Errorf("Base 64 decoding failed: %s", err)
+	}
+	t.Logf(result)
 }
 
 func TestGenerateInjectionPad(t *testing.T) {
@@ -31,7 +36,7 @@ func TestGenerateInjectionPad(t *testing.T) {
 		t.Errorf("Error: %s", err)
 	}
 	// Test pad creation for all pad lengths
-	for i := 1; i <= len(i2); i++ {
+	for i := 1; i < len(i2); i++ {
 		result := generateInjectionPad(i2, i)
 		correctPad := byte(i + 1)
 

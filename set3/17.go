@@ -63,6 +63,8 @@
 package set_three
 
 import (
+	"bytes"
+
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
@@ -84,8 +86,7 @@ func EncryptRandomString() []byte {
 		"MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93",
 	}
 
-	//i := cryptopals.RandomInt(0, len(possibilities)-1)
-	i := 0
+	i := cryptopals.RandomInt(0, len(possibilities)-1)
 	encrypted, err := cryptopals.EncryptAESCBC([]byte(possibilities[i]), cryptopals.RANDOM_KEY, iv)
 	if err != nil {
 		panic(err)
@@ -104,21 +105,21 @@ func CBCPaddingOracle(ciphertext []byte) bool {
 // Create a byte slice which when XORed against i2, produces
 // padLength bytes at the end of the result which are one byte
 // short of making a full PKCS7 pad.
+// This result is then used in C1' to brute force the next byte
 func generateInjectionPad(i2 []byte, padLength int) []byte {
 	blockSize := len(i2)
-	result, _ := cryptopals.GenerateRandomBytes(blockSize)
 
 	if padLength < 1 {
 		panic("generateInjectionPad: invalid padLength")
 	}
 
-	// Set all the bytes to padLength + 1
-	// i.e. If we're padding 3 bytes, we want the last 4 bytes to be 0x04
-	for i := 1; i <= padLength; i++ {
-		result[blockSize-i] = i2[blockSize-i] ^ byte(padLength+1)
-	}
+	randomPrefix, _ := cryptopals.GenerateRandomBytes(blockSize - padLength)
 
-	return result
+	// Generate slice of padded values XORed with the intermediate block for C1'
+	pad := bytes.Repeat([]byte{byte(padLength + 1)}, padLength)
+	cryptopals.FixedXOR(pad, i2[len(i2)-padLength:])
+
+	return append(randomPrefix, pad...)
 }
 
 /* Brute force the plaintext of C2 by exploiting the padding oracle
@@ -145,7 +146,7 @@ func generateInjectionPad(i2 []byte, padLength int) []byte {
  *         P2[15] = C1[15] ^ I2[15]
  *
  *  4. Do the same thing for the remaining bytes in P2. Start by determining
- *     what we must set C1'[i] should be set to to make P2'[i] equal the
+ *     what C1'[i] should be set to to make P2'[i] equal the
  *     correct padding value.
  *
  *         C1'[15] = I2[15] ^ 0x02
