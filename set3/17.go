@@ -72,7 +72,7 @@ type PaddingOracle func([]byte) bool
 
 var iv = []byte("YELLOW SUBMARINE")
 
-func EncryptRandomString() []byte {
+func EncryptRandomString() ([]byte, []byte) {
 	possibilities := []string{
 		"MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=",
 		"MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=",
@@ -91,7 +91,7 @@ func EncryptRandomString() []byte {
 	if err != nil {
 		panic(err)
 	}
-	return encrypted
+	return encrypted, iv
 }
 
 func CBCPaddingOracle(ciphertext []byte) bool {
@@ -191,10 +191,11 @@ func BruteForceBlock(c1, c2 []byte, oracle PaddingOracle) []byte {
 
 // We can use the padding oracle and some intercepted ciphertext to manipulate
 // inputs of blocks until they yield padded plaintext.
-func BruteForcePaddingOracle(ciphertext []byte, oracle PaddingOracle) []byte {
+func BruteForcePaddingOracle(ciphertext, iv []byte, oracle PaddingOracle) []byte {
 	var result []byte
 	blockSize := 16
-	blocks := cryptopals.SplitBytes(ciphertext, blockSize)
+	ciphertextWithIV := append(iv, ciphertext...)
+	blocks := cryptopals.SplitBytes(ciphertextWithIV, blockSize)
 	for i := 1; i < len(blocks); i++ {
 		result = append(result, BruteForceBlock(blocks[i-1], blocks[i], oracle)...)
 	}

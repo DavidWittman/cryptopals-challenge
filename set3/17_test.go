@@ -7,12 +7,12 @@ import (
 )
 
 func TestEncryptRandomString(t *testing.T) {
-	_ = EncryptRandomString()
+	_, _ = EncryptRandomString()
 }
 
 func TestCBCPaddingOracle(t *testing.T) {
 	for i := 0; i < 1000; i++ {
-		ciphertext := EncryptRandomString()
+		ciphertext, _ := EncryptRandomString()
 		if !CBCPaddingOracle(ciphertext) {
 			t.Errorf("CBCPaddingOracle returned false for ciphertext %v", ciphertext)
 		}
@@ -20,14 +20,16 @@ func TestCBCPaddingOracle(t *testing.T) {
 }
 
 func TestBruteForcePaddingOracle(t *testing.T) {
-	encrypted := EncryptRandomString()
-	paddedResult := BruteForcePaddingOracle(encrypted, CBCPaddingOracle)
-	base64Result := string(cryptopals.MaybePKCS7Unpad(paddedResult))
-	result, err := cryptopals.ReadBase64String(base64Result)
-	if err != nil {
-		t.Errorf("Base 64 decoding failed: %s", err)
+	for i := 0; i < 10; i++ {
+		ciphertext, iv := EncryptRandomString()
+		paddedResult := BruteForcePaddingOracle(ciphertext, iv, CBCPaddingOracle)
+		base64Result := string(cryptopals.MaybePKCS7Unpad(paddedResult))
+		result, err := cryptopals.ReadBase64String(base64Result)
+		if err != nil {
+			t.Errorf("Base 64 decoding failed: %s", err)
+		}
+		t.Logf(result)
 	}
-	t.Logf(result)
 }
 
 func TestGenerateInjectionPad(t *testing.T) {
