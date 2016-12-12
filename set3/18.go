@@ -67,7 +67,7 @@ func DecryptCTRMessage() []byte {
 	if err != nil {
 		panic(err)
 	}
-	block, err := aes.NewCipher([]byte("YELLOW SUBMARINE"))
+	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		panic(err)
 	}
