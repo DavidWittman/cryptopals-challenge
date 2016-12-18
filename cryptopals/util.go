@@ -1,6 +1,7 @@
 package cryptopals
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/base64"
 	"io/ioutil"
@@ -38,6 +39,32 @@ func ReadAllBase64(filename string) ([]byte, error) {
 	}
 
 	return bytes, nil
+}
+
+// TODO(dw): Needs tests
+// Read and decode base64 encoded lines from filename
+func ReadAllBase64Lines(filename string) ([][]byte, error) {
+	var result [][]byte
+
+	file, err := os.Open(filename)
+	if err != nil {
+		return result, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		decodedLine, err := ReadBase64String(scanner.Text())
+		if err != nil {
+			return result, err
+		}
+		result = append(result, []byte(decodedLine))
+	}
+	if err := scanner.Err(); err != nil {
+		return result, err
+	}
+
+	return result, nil
 }
 
 func ReadBase64String(input string) (string, error) {

@@ -8,11 +8,7 @@ import (
 )
 
 func TestSplitDecodeAndEncrypt(t *testing.T) {
-	input := `Z28gbmluamEgZ28gbmluamEgZ28=
-SSBncmFiYmVkIG15IG5pbmUsIGFsbCBJIGhlYXJkIHdhcyBzaGVsbHM=
-SWYgdGhlcmUgd2FzIGEgcHJvYmxlbSwgeW8sIEknbGwgc29sdmUgaXQ=`
-
-	results, err := splitDecodeAndEncrypt(input)
+	results, err := splitDecodeAndEncrypt("./data/19.txt")
 
 	if err != nil {
 		t.Errorf("Error splitting bytes: %s", err)
@@ -23,12 +19,12 @@ SWYgdGhlcmUgd2FzIGEgcHJvYmxlbSwgeW8sIEknbGwgc29sdmUgaXQ=`
 	}
 }
 
-func TestBreakFixedNonceCTR(t *testing.T) {
-	ciphers, err := splitDecodeAndEncrypt(CIPHERTEXTS)
+func TestGuessFixedNonceCTRKeystream(t *testing.T) {
+	ciphers, err := splitDecodeAndEncrypt("./data/19.txt")
 	if err != nil {
 		t.Errorf("Error preparing input for BreakFixedNonceCTR: %s", err)
 	}
-	keystream := BreakFixedNonceCTR(ciphers)
+	keystream := GuessFixedNonceCTRKeystream(ciphers)
 	for _, cipher := range ciphers {
 		err := cryptopals.FixedXOR(cipher, keystream[:len(cipher)])
 		if err != nil {
