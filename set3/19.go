@@ -81,25 +81,44 @@ func findLongest(ciphers [][]byte) []byte {
 	return ciphers[longest]
 }
 
-// Naive scoring of a guess of a keystream byte
-func scoreGuess(ciphers [][]byte, keyByte byte, index int) int {
+// Naive scoring of a guess of a keystream
+func scoreKeystream(cipher, keystream []byte) int {
 	score := 0
 	goodBytes := []byte("AEIOURSTLMNaeiourstlmn,.; ")
-	for _, cipher := range ciphers {
-		if index < len(cipher) {
-			char := cipher[index] ^ keyByte
-			// Short circuit scoring for non-printable bytes
-			if char < 32 || char > 126 {
-				return -1
-			}
-			// Good bytes get points!
-			for _, goodByte := range goodBytes {
-				if char == goodByte {
-					score += 1
-					break
-				}
-			}
+
+	// Use min(len(keystream), len(cipher))
+	length := len(keystream)
+	if length > len(cipher) {
+		length = len(cipher)
+	}
+
+	plaintext := make([]byte, length)
+	copy(plaintext, keystream)
+
+	err := cryptopals.FixedXOR(plaintext, cipher[:length])
+	if err != nil {
+		panic(err)
+	}
+
+	// Just score based on the last character (for now)
+	if plaintext[length-1] < 32 || plaintext[length-1] > 126 {
+		return -1
+	}
+	// Good bytes get points!
+	for _, goodByte := range goodBytes {
+		if plaintext[length-1] == goodByte {
+			score += 1
+			break
 		}
+	}
+
+	return score
+}
+
+func scoreAllCiphers(ciphers [][]byte, keystream []byte) int {
+	score := 0
+	for _, cipher := range ciphers {
+		score += scoreKeystream(cipher, keystream)
 	}
 	return score
 }
@@ -114,7 +133,9 @@ func scoreGuess(ciphers [][]byte, keyByte byte, index int) int {
 // This guessing and scoring starts to break down when the number of remaining
 // ciphers (because of the varying lengths) starts to drop. Some better scoring,
 // possibly using trigrams/frequencies, would probably improve this. However,
-// based on the description, I think
+// based on the description, I think getting 90% of the way there is good enough.
+//
+// I used this result to start guessing the rest of the bytes
 func GuessFixedNonceCTRKeystream(ciphers [][]byte) []byte {
 	var keystream []byte
 
@@ -127,10 +148,10 @@ func GuessFixedNonceCTRKeystream(ciphers [][]byte) []byte {
 
 		// We're using the range 32 -> 126 for printable ASCII
 		for guess := 32; guess <= 126; guess++ {
-			keyGuess := longest[i] ^ byte(guess)
-			if score := scoreGuess(ciphers, keyGuess, i); score > bestKeyScore {
+			keyGuess := append(keystream, longest[i]^byte(guess))
+			if score := scoreAllCiphers(ciphers, keyGuess); score > bestKeyScore {
 				bestKeyScore = score
-				bestKeyGuess = keyGuess
+				bestKeyGuess = keyGuess[len(keyGuess)-1]
 			}
 		}
 		keystream = append(keystream, byte(bestKeyGuess))
