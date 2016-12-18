@@ -14,7 +14,7 @@ func TestSplitDecodeAndEncrypt(t *testing.T) {
 		t.Errorf("Error splitting bytes: %s", err)
 	}
 
-	if len(results) != 3 {
+	if len(results) != 40 {
 		t.Errorf("Wrong number of results returned from SplitDecodeAndEncrypt: %d", len(results))
 	}
 }
