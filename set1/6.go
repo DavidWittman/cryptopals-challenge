@@ -23,6 +23,7 @@ package set_one
 
 import (
 	"bytes"
+
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
@@ -36,17 +37,6 @@ func countBits(b byte) int {
 		count += int(b & 1)
 	}
 	return count
-}
-
-// Transpose a slice of byte slices. e.g. AA,BB,CC == ABC,ABC
-func transpose(chunks [][]byte) [][]byte {
-	result := make([][]byte, len(chunks[0]))
-	for _, chunk := range chunks {
-		for j, b := range chunk {
-			result[j] = append(result[j], b)
-		}
-	}
-	return result
 }
 
 // The Hamming Distance (or edit distance) is the number of differing bits between two buffers
@@ -109,12 +99,12 @@ func BreakRepeatingKeyXOR(filename string) []byte {
 	}
 	keySize := GuessKeySize(cipherBytes)
 
-	byteGroups := transpose(cryptopals.SplitBytes(cipherBytes, keySize))
+	byteGroups := cryptopals.TransposeBytes(cryptopals.SplitBytes(cipherBytes, keySize))
 	for i, byteGroup := range byteGroups {
 		byteGroups[i] = DecryptXOR(byteGroup)
 	}
 
-	decrypted := bytes.Join(transpose(byteGroups), []byte{})
+	decrypted := bytes.Join(cryptopals.TransposeBytes(byteGroups), []byte{})
 
 	return decrypted
 }

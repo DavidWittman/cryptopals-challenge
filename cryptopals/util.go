@@ -93,3 +93,14 @@ func FindMatchingBlock(data []byte, size int) int {
 
 	return -1
 }
+
+// Transpose a slice of byte slices. e.g. AA,BB,CC == ABC,ABC
+func TransposeBytes(chunks [][]byte) [][]byte {
+	result := make([][]byte, len(chunks[0]))
+	for _, chunk := range chunks {
+		for j, b := range chunk {
+			result[j] = append(result[j], b)
+		}
+	}
+	return result
+}

@@ -1,7 +1,6 @@
 package set_one
 
 import (
-	"bytes"
 	"encoding/base64"
 	"io/ioutil"
 	"os"
@@ -46,37 +45,4 @@ func TestGuessKeySize(t *testing.T) {
 
 func TestBreakRepeatingKeyXOR(t *testing.T) {
 	t.Log(string(BreakRepeatingKeyXOR("./data/6.txt")))
-}
-
-func TestTranspose(t *testing.T) {
-	chunks := [][]byte{
-		[]byte("aa0aa"),
-		[]byte("bbbb5"),
-		[]byte("ccc4c"),
-		[]byte("dd3dd"),
-		[]byte("e2eee"),
-		[]byte("1ffff"),
-	}
-	expected := [][]byte{
-		[]byte("abcde1"),
-		[]byte("abcd2f"),
-		[]byte("0bc3ef"),
-		[]byte("ab4def"),
-		[]byte("a5cdef"),
-	}
-	result := transpose(chunks)
-	for i, b := range result {
-		if !bytes.Equal(b, expected[i]) {
-			t.Fatalf("Got bytes: %v, expected: %v", b, expected[i])
-		}
-	}
-
-	// Transpose again and make sure it's the same as when we begun
-	doubleTranspose := transpose(result)
-	for i, b := range doubleTranspose {
-		if !bytes.Equal(b, chunks[i]) {
-			t.Fatalf("Got bytes: %v, expected: %v", b, expected[i])
-		}
-	}
-
 }
