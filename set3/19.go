@@ -70,13 +70,15 @@
  * so on.
  *
  * Don't overthink it.
- * Points for automating this, but part of the reason I'm having you do this is that I think this approach is suboptimal.
+ * Points for automating this, but part of the reason I'm having you do this is
+ * that I think this approach is suboptimal.
  *
  */
 
 package set_three
 
 import (
+	"crypto/aes"
 	"strings"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
@@ -123,15 +125,88 @@ SGUsIHRvbywgaGFzIGJlZW4gY2hhbmdlZCBpbiBoaXMgdHVybiw=
 VHJhbnNmb3JtZWQgdXR0ZXJseTo=
 QSB0ZXJyaWJsZSBiZWF1dHkgaXMgYm9ybi4=`
 
-func splitAndDecode(text string) ([][]byte, error) {
+// Splits a string on newlines, decodes w/ base64, and encrypts
+// the lines in CTR block mode using the same AES key and nonce
+func splitDecodeAndEncrypt(text string) ([][]byte, error) {
 	var results [][]byte
+
+	block, err := aes.NewCipher(cryptopals.RANDOM_KEY)
+	if err != nil {
+		panic(err)
+	}
+
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
 		decoded, err := cryptopals.ReadBase64String(line)
 		if err != nil {
 			return [][]byte{}, nil
 		}
-		results = append(results, []byte(decoded))
+		blockMode := cryptopals.NewCTR(block, 0)
+		encrypted := make([]byte, len(decoded))
+		blockMode.CryptBlocks(encrypted, []byte(decoded))
+		results = append(results, encrypted)
 	}
+
 	return results, nil
+}
+
+// Returns the longest byte slice in a 2d byte-slice
+// In case of a tie, the element with the lowest index wins
+func findLongest(ciphers [][]byte) []byte {
+	longest := 0
+	for i, cipher := range ciphers {
+		if len(cipher) > len(ciphers[longest]) {
+			longest = i
+		}
+	}
+	return ciphers[longest]
+}
+
+// Naive scoring of a guess of a keystream byte
+func scoreGuess(ciphers [][]byte, keyByte byte, index int) int {
+	score := 0
+	goodBytes := []byte("AEIOURSTLMNaeiourstlmn,.; ")
+	for _, cipher := range ciphers {
+		if index < len(cipher) {
+			char := cipher[index] ^ keyByte
+			// Short circuit scoring for non-printable bytes
+			if char < 32 || char > 126 {
+				return -1
+			}
+			// Good bytes get points!
+			for _, goodByte := range goodBytes {
+				if char == goodByte {
+					score += 1
+					break
+				}
+			}
+		}
+	}
+	return score
+}
+
+// I didn't do the trigram thing here. Just pick the longest cipher and start
+// guessing/scoring keystream bytes against the other ciphers.
+func BreakFixedNonceCTR(ciphers [][]byte) []byte {
+	var keystream []byte
+
+	longest := findLongest(ciphers)
+	for i := 0; i < len(longest); i++ {
+		// Guess a character for the first byte and score the result against
+		// all of the other ciphers
+		var bestKeyGuess byte
+		bestKeyScore := 0
+
+		// We're using the range 32 -> 126 for printable ASCII
+		for guess := 32; guess <= 126; guess++ {
+			keyGuess := longest[i] ^ byte(guess)
+			if score := scoreGuess(ciphers, keyGuess, i); score > bestKeyScore {
+				bestKeyScore = score
+				bestKeyGuess = keyGuess
+			}
+		}
+		keystream = append(keystream, byte(bestKeyGuess))
+	}
+
+	return keystream
 }
