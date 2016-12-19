@@ -44,9 +44,9 @@ import (
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
-// Splits a string on newlines, decodes w/ base64, and encrypts
+// Splits a file on newlines, decodes w/ base64, and encrypts
 // the lines in CTR block mode using the same AES key and nonce
-func splitDecodeAndEncrypt(text string) ([][]byte, error) {
+func splitDecodeAndEncrypt(filename string) ([][]byte, error) {
 	var results [][]byte
 
 	block, err := aes.NewCipher(cryptopals.RANDOM_KEY)
@@ -54,7 +54,7 @@ func splitDecodeAndEncrypt(text string) ([][]byte, error) {
 		panic(err)
 	}
 
-	lines, err := cryptopals.ReadAllBase64Lines("./data/19.txt")
+	lines, err := cryptopals.ReadAllBase64Lines(filename)
 	if err != nil {
 		panic(err)
 	}

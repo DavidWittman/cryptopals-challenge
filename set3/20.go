@@ -18,3 +18,5 @@
  *
  */
 package set_three
+
+// I solved challenge 19 this way, no need to repeat myself
