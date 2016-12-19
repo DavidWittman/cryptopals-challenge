@@ -100,7 +100,8 @@ func scoreKeystream(cipher, keystream []byte) int {
 		panic(err)
 	}
 
-	// Just score based on the last character (for now)
+	// Just score based on the last character (for now),
+	// more intelligent scoring could use tri- or bigram frequencies
 	if plaintext[length-1] < 32 || plaintext[length-1] > 126 {
 		return -1
 	}
@@ -135,7 +136,8 @@ func scoreAllCiphers(ciphers [][]byte, keystream []byte) int {
 // possibly using trigrams/frequencies, would probably improve this. However,
 // based on the description, I think getting 90% of the way there is good enough.
 //
-// I used this result to start guessing the rest of the bytes
+// After this result I was able to determine the full plaintext via Google.
+// Spoiler alert: It's "Easter, 1916" by W.B. Yeats
 func GuessFixedNonceCTRKeystream(ciphers [][]byte) []byte {
 	var keystream []byte
 
