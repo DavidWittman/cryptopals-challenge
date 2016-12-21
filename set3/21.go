@@ -30,8 +30,8 @@ const (
 	r uint64 = 31
 
 	a uint64 = 0xB5026F5AA96619E9
-
 	f uint64 = 6364136223846793005
+
 	u uint64 = 29
 	d uint64 = 0x5555555555555555
 
@@ -44,7 +44,10 @@ const (
 	l uint64 = 43
 
 	lowerMask uint64 = (1 << r)
-	upperMask uint64 = ^lowerMask & 0xFFFFFFFF
+	upperMask uint64 = ^lowerMask
+
+	// Default seed value if none is provided
+	DEFAULT_SEED uint64 = 5489
 )
 
 type mersenneTwister struct {
@@ -52,19 +55,20 @@ type mersenneTwister struct {
 	state [n]uint64
 }
 
-func NewMersenneTwister(seed uint64) *mersenneTwister {
-	mt := &mersenneTwister{}
+func NewMersenneTwister() *mersenneTwister {
+	return &mersenneTwister{index: n + 1}
+}
+
+func (mt *mersenneTwister) Seed(seed uint64) {
 	mt.index = n
 	mt.state[0] = seed
 
 	for i := uint64(1); i < n; i++ {
 		mt.state[i] = (f*(mt.state[i-1]^(mt.state[i-1]>>w-2)) + i)
 	}
-
-	return mt
 }
 
-func (mt *mersenneTwister) Twist() {
+func (mt *mersenneTwister) twist() {
 	for i := uint64(0); i < n-1; i++ {
 		x := (mt.state[i] & upperMask) + ((mt.state[i+1] % n) & lowerMask)
 		xA := x >> 1
@@ -81,9 +85,9 @@ func (mt *mersenneTwister) Twist() {
 func (mt *mersenneTwister) Extract() uint64 {
 	if mt.index >= n {
 		if mt.index > n {
-			panic("mersenneTwister: Generator was never seeded")
+			mt.Seed(DEFAULT_SEED)
 		}
-		mt.Twist()
+		mt.twist()
 	}
 
 	y := mt.state[mt.index]

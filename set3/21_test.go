@@ -7,15 +7,16 @@ import (
 func TestMersenneTwister(t *testing.T) {
 	expected := []uint64{
 		7042061971801565153,
-		17005103146383502316,
-		6547901016201289693,
-		1862943985907498947,
-		1978926124953048649,
-		1229322244821217110,
+		3971971653833553820,
+		6733007059023379977,
+		5616813698650337178,
+		9458464634160156906,
+		1591723812696116321,
 	}
 
 	seed := uint64(42)
-	mt := NewMersenneTwister(seed)
+	mt := NewMersenneTwister()
+	mt.Seed(seed)
 
 	for i := 0; i < len(expected); i++ {
 		if r := mt.Extract(); r != expected[i] {
@@ -24,9 +25,19 @@ func TestMersenneTwister(t *testing.T) {
 	}
 
 	seed = uint64(18927348912)
-	mt = NewMersenneTwister(seed)
+	mt = NewMersenneTwister()
+	mt.Seed(seed)
 
 	if mt.Extract() == expected[0] {
 		t.Errorf("Hey this ain't random bro")
 	}
+}
+
+func TestMersenneTwisterDefaultSeed(t *testing.T) {
+	mt := NewMersenneTwister()
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
 }
