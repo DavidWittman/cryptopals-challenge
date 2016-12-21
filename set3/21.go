@@ -24,31 +24,31 @@
 package set_three
 
 const (
-	w = 64
-	n = 312
-	m = 156
-	r = 31
+	w uint64 = 64
+	n uint64 = 312
+	m uint64 = 156
+	r uint64 = 31
 
-	a = 0xB5026F5AA96619E9
+	a uint64 = 0xB5026F5AA96619E9
 
-	f = 6364136223846793005
-	u = 29
-	d = 0x5555555555555555
+	f uint64 = 6364136223846793005
+	u uint64 = 29
+	d uint64 = 0x5555555555555555
 
-	s = 17
-	b = 0x71D67FFFEDA60000
+	s uint64 = 17
+	b uint64 = 0x71D67FFFEDA60000
 
-	t = 37
-	c = 0xFFF7EEE000000000
+	t uint64 = 37
+	c uint64 = 0xFFF7EEE000000000
 
-	l = 43
+	l uint64 = 43
 
-	lowerMask = (1 << r)
-	upperMask = ^lowerMask & 0xFFFFFFFF
+	lowerMask uint64 = (1 << r)
+	upperMask uint64 = ^lowerMask & 0xFFFFFFFF
 )
 
 type mersenneTwister struct {
-	index uint16
+	index uint64
 	state [n]uint64
 }
 
@@ -57,15 +57,15 @@ func NewMersenneTwister(seed uint64) *mersenneTwister {
 	mt.index = n
 	mt.state[0] = seed
 
-	for i := 1; i < n; i++ {
-		mt.state[i] = (f*(mt.state[i-1]^(mt.state[i-1]>>w-2)) + uint64(i))
+	for i := uint64(1); i < n; i++ {
+		mt.state[i] = (f*(mt.state[i-1]^(mt.state[i-1]>>w-2)) + i)
 	}
 
 	return mt
 }
 
 func (mt *mersenneTwister) Twist() {
-	for i := 0; i < n-1; i++ {
+	for i := uint64(0); i < n-1; i++ {
 		x := (mt.state[i] & upperMask) + ((mt.state[i+1] % n) & lowerMask)
 		xA := x >> 1
 		if x%2 == 1 {
