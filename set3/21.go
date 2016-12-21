@@ -9,80 +9,67 @@
  *
  * NOTES:
  *
- * The coefficients for MT19937-64 are:[46]
+ * The coefficients for MT19937 are:
  *
- *     (w, n, m, r) = (64, 312, 156, 31)
- *     a = 0xB5026F5AA96619E9
- *     f = 6364136223846793005
- *     (u, d) = (29, 0x5555555555555555)
- *     (s, b) = (17, 0x71D67FFFEDA60000)
- *     (t, c) = (37, 0xFFF7EEE000000000)
- *     l = 43
+ *     (w, n, m, r) = (32, 624, 397, 31)
+ *     a = 0x9908B0DF
+ *     f = 1812433253
+ *     (u, d) = (11, 0xFFFFFFFF)
+ *     (s, b) = (7, 0x9D2C5680)
+ *     (t, c) = (15, 0xEFC60000)
+ *     l = 18
  *
  */
 
 package set_three
 
 const (
-	w uint64 = 64
-	n uint64 = 312
-	m uint64 = 156
-	r uint64 = 31
+	w uint32 = 32
+	n uint32 = 624
+	m uint32 = 397
+	r uint32 = 31
 
-	a uint64 = 0xB5026F5AA96619E9
-	f uint64 = 6364136223846793005
+	a uint32 = 0x9908B0DF
+	f uint32 = 1812433253
 
-	u uint64 = 29
-	d uint64 = 0x5555555555555555
+	u uint32 = 11
+	d uint32 = 0xFFFFFFFF
 
-	s uint64 = 17
-	b uint64 = 0x71D67FFFEDA60000
+	s uint32 = 7
+	b uint32 = 0x9D2C5680
 
-	t uint64 = 37
-	c uint64 = 0xFFF7EEE000000000
+	t uint32 = 15
+	c uint32 = 0xEFC60000
 
-	l uint64 = 43
+	l uint32 = 18
 
-	lowerMask uint64 = 0x000000007FFFFFFF
-	upperMask uint64 = 0xFFFFFFFF80000000
+	lowerMask uint32 = 0x7FFFFFFF
+	upperMask uint32 = 0x80000000
 
 	// Default seed value if none is provided
-	DEFAULT_SEED uint64 = 5489
+	DEFAULT_SEED uint32 = 5489
 )
 
 type mersenneTwister struct {
-	index uint64
-	state [n]uint64
+	index uint32
+	state [n]uint32
 }
 
 func NewMersenneTwister() *mersenneTwister {
 	return &mersenneTwister{index: n + 1}
 }
 
-func (mt *mersenneTwister) Seed(seed uint64) {
+func (mt *mersenneTwister) Seed(seed uint32) {
 	mt.index = n
 	mt.state[0] = seed
 
-	for i := uint64(1); i < n; i++ {
+	for i := uint32(1); i < n; i++ {
 		mt.state[i] = (f*(mt.state[i-1]^(mt.state[i-1]>>(w-2))) + i)
 	}
 }
 
 func (mt *mersenneTwister) twist() {
-	/*
-		for i := uint64(0); i < n-m; i++ {
-			y := (mt.state[i] & upperMask) | (mt.state[i+1] & lowerMask)
-			mt.state[i] = mt.state[i+m] ^ (y >> 1) ^ ((y & 1) * a)
-		}
-		for i := uint64(156); i < n-1; i++ {
-			y := (mt.state[i] & upperMask) | (mt.state[i+1] & lowerMask)
-			mt.state[i] = mt.state[i-156] ^ (y >> 1) ^ ((y & 1) * a)
-		}
-		y := (mt.state[n-1] & upperMask) | (mt.state[0] & lowerMask)
-		mt.state[n-1] = mt.state[m-1] ^ (y >> 1) ^ ((y & 1) * a)
-	*/
-
-	for i := uint64(0); i < n; i++ {
+	for i := uint32(0); i < n; i++ {
 		x := (mt.state[i] & upperMask) + (mt.state[(i+1)%n] & lowerMask)
 		xA := x >> 1
 		if x%2 == 1 {
@@ -95,8 +82,8 @@ func (mt *mersenneTwister) twist() {
 	mt.index = 0
 }
 
-// Extract returns a random uint64
-func (mt *mersenneTwister) Extract() uint64 {
+// Extract returns a random uint32
+func (mt *mersenneTwister) Extract() uint32 {
 	if mt.index >= n {
 		if mt.index > n {
 			mt.Seed(DEFAULT_SEED)

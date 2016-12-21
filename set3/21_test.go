@@ -5,16 +5,16 @@ import (
 )
 
 func TestMersenneTwister(t *testing.T) {
-	expected := []uint64{
-		7042061971801565153,
-		3971971653833553820,
-		6733007059023379977,
-		5616813698650337178,
-		9458464634160156906,
-		1591723812696116321,
+	expected := []uint32{
+		1608637542,
+		3421126067,
+		4083286876,
+		787846414,
+		3143890026,
+		3348747335,
 	}
 
-	seed := uint64(42)
+	seed := uint32(42)
 	mt := NewMersenneTwister()
 	mt.Seed(seed)
 
@@ -24,7 +24,7 @@ func TestMersenneTwister(t *testing.T) {
 		}
 	}
 
-	seed = uint64(18927348912)
+	seed = uint32(8912)
 	mt = NewMersenneTwister()
 	mt.Seed(seed)
 
@@ -34,10 +34,20 @@ func TestMersenneTwister(t *testing.T) {
 }
 
 func TestMersenneTwisterDefaultSeed(t *testing.T) {
+	expected := []uint32{
+		3499211612,
+		581869302,
+		3890346734,
+		3586334585,
+		545404204,
+	}
+
+	// This uses the default seed of 5489
 	mt := NewMersenneTwister()
-	t.Log(mt.Extract())
-	t.Log(mt.Extract())
-	t.Log(mt.Extract())
-	t.Log(mt.Extract())
-	t.Log(mt.Extract())
+
+	for i := 0; i < len(expected); i++ {
+		if r := mt.Extract(); r != expected[i] {
+			t.Errorf("Wrong number generated. Got: %d, Expected %d.", r, expected[i])
+		}
+	}
 }
