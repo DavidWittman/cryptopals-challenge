@@ -26,18 +26,42 @@ import (
 	"time"
 )
 
-func GenerateRandomInt() uint32 {
+func sleepRand(min, max int) {
 	var n int
 
-	// We're not seeding this so it will always generate the same value, but meh
-	for n < 40 {
-		n = rand.Intn(1000)
+	rand.Seed(time.Now().Unix())
+
+	for n < min {
+		n = rand.Intn(max)
 	}
 
 	time.Sleep(time.Second * time.Duration(n))
+}
 
+func GenerateRandomInt() uint32 {
 	mt := NewMersenneTwister()
+
+	sleepRand(40, 1000)
 	mt.Seed(uint32(time.Now().Unix()))
+	sleepRand(40, 300)
 
 	return mt.Extract()
+}
+
+func FindSeed(r uint32) uint32 {
+	var seed uint32
+	// Check all timestamps for today (2016/12/21)
+	var start, end uint32 = 1482300000, 1482386400
+
+	mt := NewMersenneTwister()
+
+	for i := start; i < end; i++ {
+		mt.Seed(i)
+		if mt.Extract() == r {
+			seed = i
+			break
+		}
+	}
+
+	return seed
 }

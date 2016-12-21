@@ -5,7 +5,7 @@ import (
 )
 
 // This was previously generated with GenerateRandomInt
-const randomInt = 3298794916
+const randomInt = 606774834
 
 func TestGenerateRandomInt(t *testing.T) {
 	// Skip this test if we already have a random integer which was generated
@@ -15,4 +15,15 @@ func TestGenerateRandomInt(t *testing.T) {
 	}
 	i := GenerateRandomInt()
 	t.Logf("Generated random integer: %d", i)
+}
+
+func TestFindSeed(t *testing.T) {
+	result := FindSeed(randomInt)
+
+	mt := NewMersenneTwister()
+	mt.Seed(result)
+
+	if r := mt.Extract(); r != randomInt {
+		t.Errorf("Incorrect seed found: %d", result)
+	}
 }
