@@ -20,3 +20,24 @@
  */
 
 package set_three
+
+import (
+	"math/rand"
+	"time"
+)
+
+func GenerateRandomInt() uint32 {
+	var n int
+
+	// We're not seeding this so it will always generate the same value, but meh
+	for n < 40 {
+		n = rand.Intn(1000)
+	}
+
+	time.Sleep(time.Second * time.Duration(n))
+
+	mt := NewMersenneTwister()
+	mt.Seed(uint32(time.Now().Unix()))
+
+	return mt.Extract()
+}
