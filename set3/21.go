@@ -78,5 +78,20 @@ func (mt *mersenneTwister) Twist() {
 }
 
 func (mt *mersenneTwister) Extract() uint64 {
-	return uint64(0)
+	if mt.index >= n {
+		if mt.index > n {
+			panic("mersenneTwister: Generator was never seeded")
+		}
+		mt.Twist()
+	}
+
+	y := mt.mt[mt.index]
+	y ^= ((y >> u) & d)
+	y ^= ((y << s) & b)
+	y ^= ((y << t) & c)
+	y ^= (y >> l)
+
+	mt.index++
+
+	return y
 }
