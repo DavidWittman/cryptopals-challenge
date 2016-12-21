@@ -49,16 +49,16 @@ const (
 
 type mersenneTwister struct {
 	index uint16
-	mt    [n]uint64
+	state [n]uint64
 }
 
 func NewMersenneTwister(seed uint64) *mersenneTwister {
 	mt := &mersenneTwister{}
 	mt.index = n
-	mt.mt[0] = seed
+	mt.state[0] = seed
 
 	for i := 1; i < n; i++ {
-		mt.mt[i] = (f*(mt.mt[i-1]^(mt.mt[i-1]>>w-2)) + uint64(i))
+		mt.state[i] = (f*(mt.state[i-1]^(mt.state[i-1]>>w-2)) + uint64(i))
 	}
 
 	return mt
@@ -66,17 +66,18 @@ func NewMersenneTwister(seed uint64) *mersenneTwister {
 
 func (mt *mersenneTwister) Twist() {
 	for i := 0; i < n-1; i++ {
-		x := (mt.mt[i] & upperMask) + ((mt.mt[i+1] % n) & lowerMask)
+		x := (mt.state[i] & upperMask) + ((mt.state[i+1] % n) & lowerMask)
 		xA := x >> 1
 		if x%2 == 1 {
 			// Uneven; lowest bit of x is 1
 			xA = xA ^ a
 		}
-		mt.mt[i] = mt.mt[(i+m)%n] ^ xA
+		mt.state[i] = mt.state[(i+m)%n] ^ xA
 	}
 	mt.index = 0
 }
 
+// Extract returns a random uint64
 func (mt *mersenneTwister) Extract() uint64 {
 	if mt.index >= n {
 		if mt.index > n {
@@ -85,7 +86,7 @@ func (mt *mersenneTwister) Extract() uint64 {
 		mt.Twist()
 	}
 
-	y := mt.mt[mt.index]
+	y := mt.state[mt.index]
 	y ^= ((y >> u) & d)
 	y ^= ((y << s) & b)
 	y ^= ((y << t) & c)
