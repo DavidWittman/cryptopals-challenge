@@ -42,6 +42,9 @@ const (
 	c = 0xFFF7EEE000000000
 
 	l = 43
+
+	lowerMask = (1 << r)
+	upperMask = ^lowerMask & 0xFFFFFFFF
 )
 
 type mersenneTwister struct {
@@ -61,10 +64,19 @@ func NewMersenneTwister(seed uint64) *mersenneTwister {
 	return mt
 }
 
-func (m *mersenneTwister) Twist() {
-
+func (mt *mersenneTwister) Twist() {
+	for i := 0; i < n-1; i++ {
+		x := (mt.mt[i] & upperMask) + ((mt.mt[i+1] % n) & lowerMask)
+		xA := x >> 1
+		if x%2 == 1 {
+			// Uneven; lowest bit of x is 1
+			xA = xA ^ a
+		}
+		mt.mt[i] = mt.mt[(i+m)%n] ^ xA
+	}
+	mt.index = 0
 }
 
-func (m *mersenneTwister) Extract() uint64 {
+func (mt *mersenneTwister) Extract() uint64 {
 	return uint64(0)
 }

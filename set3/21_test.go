@@ -6,5 +6,11 @@ import (
 
 func TestMersenneTwister(t *testing.T) {
 	seed := uint64(42)
-	t.Log(NewMersenneTwister(seed))
+	mt := NewMersenneTwister(seed)
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
+	t.Log(mt.Extract())
 }
