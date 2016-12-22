@@ -92,6 +92,7 @@ func (mt *mersenneTwister) Extract() uint32 {
 	}
 
 	y := mt.state[mt.index]
+	// The & d here is effectively a noop because d = 0xFFFFFFFF
 	y ^= (y >> u) & d
 	y ^= (y << s) & b
 	y ^= (y << t) & c

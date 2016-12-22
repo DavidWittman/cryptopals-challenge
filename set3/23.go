@@ -34,18 +34,47 @@
 
 package set_three
 
-func untemper(r uint32) uint32 {
-	/*
-	 * state 2601187879
-	 * d 2602146680
-	 * b 387288952
-	 * c 3499200376
-	 * l 3499211612
-	 */
-	// Invert y ^= (y >> l)
-	// Take the top 14 bits (w-l), shift them right, and XOR
-	r ^= ((r & 0xFFFC0000) >> l)
-	// Invert y ^= (y << t) & c
+// Takes a value y, and applies the inverse of y ^= (y >> shift)
+// This effectively reapplies the XOR operations to all bytes except the top
+// shift bytes. We know those are the original bytes because X ^ 0 = X.
+func undoRightShiftXOR(y, shift uint32) uint32 {
+	var mask uint32 = ((1 << shift) - 1) << (32 - shift)
 
-	return r
+	// This is a ghetto ceil operation. We want to run ceil(32/shift) times to
+	// mask all the bits in y.
+	n := (32 + shift - 1) / shift
+	for i := uint32(0); i < n; i++ {
+		y ^= (y >> shift) & mask
+		mask >>= shift
+	}
+
+	return y
+}
+
+// Applies the inverse of y ^= (y << shift) & number
+func undoLeftShiftXOR(y, shift, number uint32) uint32 {
+	var mask uint32 = (1 << shift) - 1
+
+	// Ghetto ceil
+	n := (32 + shift - 1) / shift
+
+	for i := uint32(0); i < n; i++ {
+		y ^= (y << shift) & mask & number
+		mask <<= shift
+	}
+
+	return y
+}
+
+// Untempers a random value extracted from an MT19937 RNG to find the state for
+// that particular iteration
+func untemper(y uint32) uint32 {
+	// These constants (l, t, c, etc.) are defined in 21.go
+
+	y = undoRightShiftXOR(y, l)
+	y = undoLeftShiftXOR(y, t, c)
+	y = undoLeftShiftXOR(y, s, b)
+	y = undoRightShiftXOR(y, u)
+
+	return y
 }
