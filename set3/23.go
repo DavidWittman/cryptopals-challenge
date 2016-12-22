@@ -33,3 +33,19 @@
  */
 
 package set_three
+
+func untemper(r uint32) uint32 {
+	/*
+	 * state 2601187879
+	 * d 2602146680
+	 * b 387288952
+	 * c 3499200376
+	 * l 3499211612
+	 */
+	// Invert y ^= (y >> l)
+	// Take the top 14 bits (w-l), shift them right, and XOR
+	r ^= ((r & 0xFFFC0000) >> l)
+	// Invert y ^= (y << t) & c
+
+	return r
+}
