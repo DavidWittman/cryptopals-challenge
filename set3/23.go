@@ -86,7 +86,7 @@ func CloneMersenneTwister(mt *mersenneTwister) *mersenneTwister {
 		clone.state[i] = untemper(mt.Extract())
 	}
 
-	clone.index = n
+	clone.index = mt.index
 
 	return clone
 }
