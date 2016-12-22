@@ -57,3 +57,16 @@ func TestUntemper(t *testing.T) {
 		}
 	}
 }
+
+func TestCloneMersenneTwister(t *testing.T) {
+	mt := NewMersenneTwister()
+	mt.Seed(uint32(237462375))
+
+	clone := CloneMersenneTwister(mt)
+
+	for i := 0; i < len(mt.state); i++ {
+		if j, k := mt.Extract(), clone.Extract(); j != k {
+			t.Errorf("Clone failed. RNG: %d, Clone: %d", j, k)
+		}
+	}
+}

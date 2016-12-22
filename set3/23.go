@@ -78,3 +78,15 @@ func untemper(y uint32) uint32 {
 
 	return y
 }
+
+func CloneMersenneTwister(mt *mersenneTwister) *mersenneTwister {
+	clone := NewMersenneTwister()
+
+	for i := uint32(0); i < n; i++ {
+		clone.state[i] = untemper(mt.Extract())
+	}
+
+	clone.index = n
+
+	return clone
+}
