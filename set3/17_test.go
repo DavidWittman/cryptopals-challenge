@@ -26,7 +26,7 @@ func TestBruteForcePaddingOracle(t *testing.T) {
 		base64Result := string(cryptopals.MaybePKCS7Unpad(paddedResult))
 		result, err := cryptopals.ReadBase64String(base64Result)
 		if err != nil {
-			t.Errorf("Base 64 decoding failed: %s", err)
+			t.Errorf("Base 64 decoding failed: %s. Input: %s", err, base64Result)
 		}
 		t.Logf(result)
 	}
