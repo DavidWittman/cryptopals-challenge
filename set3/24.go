@@ -34,3 +34,7 @@ func (mt *mersenneTwister) CryptBlocks(dst, src []byte) {
 		dst[i] = b ^ byte(mt.Extract()&0xFF)
 	}
 }
+
+// The keyspace here is only 2^16, so we can pretty easily brute force it
+// Find the random prefix length with len(encrypted) - len(plaintext) and then
+// brute force those bytes in the ciphertext until the XOR matches plaintext.
