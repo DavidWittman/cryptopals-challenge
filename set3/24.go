@@ -23,3 +23,14 @@
  */
 
 package set_three
+
+func (mt *mersenneTwister) CryptBlocks(dst, src []byte) {
+	if len(dst) < len(src) {
+		panic("mt19937Cipher: output smaller than input")
+	}
+
+	for i, b := range src {
+		// XOR plaintext with 1 byte of output from MT
+		dst[i] = b ^ byte(mt.Extract()&0xFF)
+	}
+}

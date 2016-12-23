@@ -35,8 +35,15 @@
 package set_three
 
 // Takes a value y, and applies the inverse of y ^= (y >> shift)
-// This effectively reapplies the XOR operations to all bytes except the top
-// shift bytes. We know those are the original bytes because X ^ 0 = X.
+// This recovers shift bytes at a time from the original number. Because it was
+// originally right shifted, we know the top shift bytes, so we mask off `shift`
+// bytes, XOR with `y >> shift` and then proceed to the next set of bytes.
+//
+// If we just XORed all the lower bytes at once, it works in some cases --
+// specifically when shift is > half the bits -- but fails when we are slowly
+// recovering bytes from the original number. In other words, we have to mask
+// off small portions of the bytes at a time in order to reveal the next set
+// of the original number.
 func undoRightShiftXOR(y, shift uint32) uint32 {
 	var mask uint32 = ((1 << shift) - 1) << (32 - shift)
 
