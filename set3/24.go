@@ -24,6 +24,15 @@
 
 package set_three
 
+import (
+	"bytes"
+	"fmt"
+	"math"
+	"math/rand"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
 func (mt *mersenneTwister) CryptBlocks(dst, src []byte) {
 	if len(dst) < len(src) {
 		panic("mt19937Cipher: output smaller than input")
@@ -35,6 +44,33 @@ func (mt *mersenneTwister) CryptBlocks(dst, src []byte) {
 	}
 }
 
-// The keyspace here is only 2^16, so we can pretty easily brute force it
-// Find the random prefix length with len(encrypted) - len(plaintext) and then
-// brute force those bytes in the ciphertext until the XOR matches plaintext.
+func mtOracle(plaintext []byte) []byte {
+	key := uint16(rand.Intn(math.MaxUint16))
+
+	randomPrefix, _ := cryptopals.GenerateRandomBytes(rand.Intn(32))
+	plaintext = append(randomPrefix, plaintext...)
+	encrypted := make([]byte, len(plaintext))
+
+	mt := NewMersenneTwister()
+	mt.Seed(uint32(key))
+	mt.CryptBlocks(encrypted, plaintext)
+
+	return encrypted
+}
+
+func BruteForceMersenneKey(cipher, knownPlaintext []byte) (uint16, error) {
+	mt := NewMersenneTwister()
+	decrypted := make([]byte, len(cipher))
+	// The cipher is padded with random bytes on the front
+	start := len(cipher) - len(knownPlaintext)
+
+	for i := uint16(0); i < math.MaxUint16; i++ {
+		mt.Seed(uint32(i))
+		mt.CryptBlocks(decrypted, cipher)
+		if bytes.Compare(knownPlaintext, decrypted[start:]) == 0 {
+			return i, nil
+		}
+	}
+
+	return uint16(0), fmt.Errorf("Unable to brute force key")
+}

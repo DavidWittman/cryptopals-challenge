@@ -23,3 +23,14 @@ func TestMTEncryptDecrypt(t *testing.T) {
 		t.Errorf("Decrypted bytes do not match plaintext: %s", decrypted)
 	}
 }
+
+func TestBruteForceMersenneKey(t *testing.T) {
+	plaintext := []byte("AAAAAAAAAAAAAA")
+	cipher := mtOracle(plaintext)
+
+	result, err := BruteForceMersenneKey(cipher, plaintext)
+	if err != nil {
+		t.Errorf("Error: %s", err)
+	}
+	t.Logf("Found key: %d", result)
+}
