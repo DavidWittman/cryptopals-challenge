@@ -3,6 +3,7 @@ package set_three
 import (
 	"bytes"
 	"testing"
+	"time"
 )
 
 func TestMTEncryptDecrypt(t *testing.T) {
@@ -33,4 +34,17 @@ func TestBruteForceMersenneKey(t *testing.T) {
 		t.Errorf("Error: %s", err)
 	}
 	t.Logf("Found key: %d", result)
+}
+
+func TestCheckToken(t *testing.T) {
+	now := uint32(time.Now().Unix())
+	token := PasswordTokenOracle(now)
+	oldToken := PasswordTokenOracle(now - 61)
+
+	if !CheckToken(token, 60) {
+		t.Errorf("Token validation failed")
+	}
+	if CheckToken(oldToken, 60) {
+		t.Errorf("Old token incorrectly identified as valid")
+	}
 }
