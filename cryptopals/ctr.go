@@ -35,6 +35,38 @@ func (x *ctr) Nonce() []byte {
 	return append(iv.Bytes(), counter.Bytes()...)
 }
 
+// Generate specific bytes of the keystream
+// Returns `length` bytes at `offset` from the keystream
+func (x *ctr) KeystreamRange(offset, length int) []byte {
+	var result bytes.Buffer
+	// Save and restore the original counter
+	// This isn't thread safe but idgaf
+	currCounter := x.counter
+	defer func() {
+		x.counter = currCounter
+	}()
+
+	if offset < 0 || length < 1 {
+		panic("ctr.KeyStreamRange: offset must be >= 0 and length must be >= 1")
+	}
+
+	x.counter = offset / x.blockSize
+
+	for result.Len() < length {
+		nonce := x.Nonce()
+		encryptedNonce := make([]byte, x.blockSize)
+		x.b.Encrypt(encryptedNonce, nonce)
+		result.Write(encryptedNonce)
+		x.counter++
+	}
+
+	// Trim keystream
+	start := offset % x.blockSize
+	end := start + length
+
+	return result.Bytes()[start:end]
+}
+
 func (x *ctr) CryptBlocks(dst, src []byte) {
 	if len(dst) < len(src) {
 		panic("crypto/cipher: output smaller than input")
