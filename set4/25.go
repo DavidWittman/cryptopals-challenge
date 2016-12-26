@@ -57,3 +57,7 @@ func encryptFileCTR(filename string, key []byte, iv int) ([]byte, error) {
 
 	return encrypted, nil
 }
+
+func EditCTR(cipher, key []byte, offset int, newText []byte) []byte {
+	return []byte{}
+}
