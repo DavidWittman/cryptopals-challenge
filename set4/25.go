@@ -25,3 +25,35 @@
  */
 
 package set_four
+
+import (
+	"crypto/aes"
+	"io/ioutil"
+	"os"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
+func encryptFileCTR(filename string, key []byte, iv int) ([]byte, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer file.Close()
+
+	plaintext, err := ioutil.ReadAll(file)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	block, err := aes.NewCipher([]byte(key))
+	if err != nil {
+		return []byte{}, err
+	}
+
+	blockMode := cryptopals.NewCTR(block, iv)
+	encrypted := make([]byte, len(plaintext))
+	blockMode.CryptBlocks(encrypted, plaintext)
+
+	return encrypted, nil
+}
