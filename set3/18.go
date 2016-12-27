@@ -54,8 +54,6 @@
 package set_three
 
 import (
-	"crypto/aes"
-
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
@@ -67,14 +65,11 @@ func DecryptCTRMessage() []byte {
 	if err != nil {
 		panic(err)
 	}
-	block, err := aes.NewCipher([]byte(key))
+
+	decrypted, err := cryptopals.AESCTR([]byte(ciphertext), []byte(key), 0)
 	if err != nil {
 		panic(err)
 	}
-
-	blockMode := cryptopals.NewCTR(block, 0)
-	decrypted := make([]byte, len(ciphertext))
-	blockMode.CryptBlocks(decrypted, []byte(ciphertext))
 
 	return decrypted
 }

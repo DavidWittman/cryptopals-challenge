@@ -57,3 +57,16 @@ func EncryptAESECB(data, key []byte) ([]byte, error) {
 
 	return encrypted, nil
 }
+
+func AESCTR(data, key []byte, iv int) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	blockMode := NewCTR(block, iv)
+	result := make([]byte, len(data))
+	blockMode.CryptBlocks(result, data)
+
+	return result, nil
+}

@@ -47,16 +47,7 @@ func encryptFileCTR(filename string, key []byte, iv int) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	blockMode := cryptopals.NewCTR(block, iv)
-	encrypted := make([]byte, len(plaintext))
-	blockMode.CryptBlocks(encrypted, plaintext)
-
-	return encrypted, nil
+	return cryptopals.AESCTR(plaintext, key, iv)
 }
 
 func Edit(cipher, key []byte, offset int, newText []byte) []byte {
