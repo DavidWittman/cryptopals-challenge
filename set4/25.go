@@ -69,13 +69,16 @@ func Edit(cipher, key []byte, offset int, newText []byte) []byte {
 	ctr := cryptopals.NewCTR(block, 0)
 	keystream := ctr.KeystreamBytes(offset, len(newText))
 
-	err = cryptopals.FixedXOR(newText, keystream)
+	newCipher := make([]byte, len(newText))
+	copy(newCipher, newText)
+
+	err = cryptopals.FixedXOR(newCipher, keystream)
 	if err != nil {
 		panic(err)
 	}
 
 	result = append(result, cipher[:offset]...)
-	result = append(result, newText...)
+	result = append(result, newCipher...)
 
 	if len(result) < len(cipher) {
 		result = append(result, cipher[len(result):]...)

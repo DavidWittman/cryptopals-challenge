@@ -43,7 +43,7 @@ func TestCTRKeystreamBytes(t *testing.T) {
 	}
 }
 
-func TestCTRPartialKeystreamBytes(t *testing.T) {
+func TestCTROffsetKeystreamBytes(t *testing.T) {
 	block, err := aes.NewCipher([]byte("YELLOW SUBMARINE"))
 	if err != nil {
 		t.Errorf("Failed creating AES block: %s", err)
@@ -51,10 +51,10 @@ func TestCTRPartialKeystreamBytes(t *testing.T) {
 
 	blockMode := NewCTR(block, 0)
 
-	expected := []byte{175, 3, 93, 108, 19, 195, 114, 210, 236, 108, 220, 152, 109, 18, 222, 207, 218}
-	keystream := blockMode.KeystreamBytes(9, 17)
+	expected := []byte{236, 108, 220, 152, 109, 18, 222, 207, 218, 31, 147, 175, 238, 115, 24, 45}
+	keystream := blockMode.KeystreamBytes(17, 16)
 
-	if len(keystream) != 17 {
+	if len(keystream) != 16 {
 		t.Errorf("Keystream length incorrect: %d", len(keystream))
 	}
 

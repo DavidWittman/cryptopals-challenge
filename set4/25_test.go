@@ -1,6 +1,7 @@
 package set_four
 
 import (
+	"bytes"
 	"crypto/aes"
 	"testing"
 
@@ -18,11 +19,14 @@ func TestEncryptFileCTR(t *testing.T) {
 }
 
 func TestEdit(t *testing.T) {
+	// This is the string we're injecting
+	spaghetti := []byte("Mom's Spaghetti,")
+
 	cipher, err := encryptFileCTR("./data/25_plain.txt", cryptopals.RANDOM_KEY, 0)
 	if err != nil {
 		t.Errorf("Error encrypting file: %s", err)
 	}
-	result := Edit(cipher, cryptopals.RANDOM_KEY, 17, []byte("Mom's Spaghetti,"))
+	result := Edit(cipher, cryptopals.RANDOM_KEY, 17, spaghetti)
 
 	block, err := aes.NewCipher(cryptopals.RANDOM_KEY)
 	if err != nil {
@@ -32,5 +36,9 @@ func TestEdit(t *testing.T) {
 	blockMode := cryptopals.NewCTR(block, 0)
 	decrypted := make([]byte, len(result))
 	blockMode.CryptBlocks(decrypted, result)
-	t.Log(string(decrypted))
+
+	editedBytes := decrypted[17:33]
+	if bytes.Compare(editedBytes, spaghetti) != 0 {
+		t.Errorf("Edit failed.\nExpected:\t%s\nGot:\t\t%s", spaghetti, editedBytes)
+	}
 }

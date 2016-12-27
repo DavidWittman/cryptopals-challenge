@@ -52,7 +52,9 @@ func (x *ctr) KeystreamBytes(offset, length int) []byte {
 
 	x.counter = offset / x.blockSize
 
-	for result.Len() < length {
+	// Generate 1 more block than the length to make sure we have enough
+	// bytes to trim off afterwards.
+	for result.Len() < (length + x.BlockSize()) {
 		nonce := x.Nonce()
 		encryptedNonce := make([]byte, x.blockSize)
 		x.b.Encrypt(encryptedNonce, nonce)
