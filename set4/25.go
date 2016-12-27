@@ -27,6 +27,7 @@
 package set_four
 
 import (
+	"bytes"
 	"crypto/aes"
 	"io/ioutil"
 	"os"
@@ -85,4 +86,19 @@ func Edit(cipher, key []byte, offset int, newText []byte) []byte {
 	}
 
 	return result
+}
+
+func EditAPI(cipher []byte, offset int, newText []byte) []byte {
+	return Edit(cipher, cryptopals.RANDOM_KEY, offset, newText)
+}
+
+func RecoverPlaintext(cipher []byte) []byte {
+	keystream := EditAPI(cipher, 0, bytes.Repeat([]byte{0}, len(cipher)))
+	plaintext := make([]byte, len(cipher))
+	copy(plaintext, cipher)
+	err := cryptopals.FixedXOR(plaintext, keystream)
+	if err != nil {
+		panic(err)
+	}
+	return plaintext
 }
