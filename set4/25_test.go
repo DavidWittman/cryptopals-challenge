@@ -3,6 +3,7 @@ package set_four
 import (
 	"bytes"
 	"crypto/aes"
+	"math/rand"
 	"testing"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
@@ -19,6 +20,8 @@ func TestEncryptFileCTR(t *testing.T) {
 }
 
 func TestEdit(t *testing.T) {
+	// Run this test 100 times
+	iterations := 100
 	// This is the string we're injecting
 	spaghetti := []byte("Mom's Spaghetti,")
 
@@ -26,19 +29,24 @@ func TestEdit(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error encrypting file: %s", err)
 	}
-	result := Edit(cipher, cryptopals.RANDOM_KEY, 17, spaghetti)
 
-	block, err := aes.NewCipher(cryptopals.RANDOM_KEY)
-	if err != nil {
-		t.Errorf("Error creating AES cipher")
-	}
+	for i := 0; i < iterations; i++ {
+		// Generate a random offset
+		offset := rand.Intn(len(cipher))
+		result := Edit(cipher, cryptopals.RANDOM_KEY, offset, spaghetti)
 
-	blockMode := cryptopals.NewCTR(block, 0)
-	decrypted := make([]byte, len(result))
-	blockMode.CryptBlocks(decrypted, result)
+		block, err := aes.NewCipher(cryptopals.RANDOM_KEY)
+		if err != nil {
+			t.Errorf("Error creating AES cipher")
+		}
 
-	editedBytes := decrypted[17:33]
-	if bytes.Compare(editedBytes, spaghetti) != 0 {
-		t.Errorf("Edit failed.\nExpected:\t%s\nGot:\t\t%s", spaghetti, editedBytes)
+		blockMode := cryptopals.NewCTR(block, 0)
+		decrypted := make([]byte, len(result))
+		blockMode.CryptBlocks(decrypted, result)
+
+		editedBytes := decrypted[offset : offset+len(spaghetti)]
+		if bytes.Compare(editedBytes, spaghetti) != 0 {
+			t.Errorf("Edit failed.\nExpected:\t%s\nGot:\t\t%s", spaghetti, editedBytes)
+		}
 	}
 }
