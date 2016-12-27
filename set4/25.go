@@ -46,7 +46,7 @@ func encryptFileCTR(filename string, key []byte, iv int) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	block, err := aes.NewCipher([]byte(key))
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -58,6 +58,28 @@ func encryptFileCTR(filename string, key []byte, iv int) ([]byte, error) {
 	return encrypted, nil
 }
 
-func EditCTR(cipher, key []byte, offset int, newText []byte) []byte {
-	return []byte{}
+func Edit(cipher, key []byte, offset int, newText []byte) []byte {
+	var result []byte
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err)
+	}
+
+	ctr := cryptopals.NewCTR(block, 0)
+	keystream := ctr.KeystreamBytes(offset, len(newText))
+
+	err = cryptopals.FixedXOR(newText, keystream)
+	if err != nil {
+		panic(err)
+	}
+
+	result = append(result, cipher[:offset]...)
+	result = append(result, newText...)
+
+	if len(result) < len(cipher) {
+		result = append(result, cipher[len(result):]...)
+	}
+
+	return result
 }

@@ -1,6 +1,7 @@
 package set_four
 
 import (
+	"crypto/aes"
 	"testing"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
@@ -16,10 +17,20 @@ func TestEncryptFileCTR(t *testing.T) {
 	}
 }
 
-func TestEditCTR(t *testing.T) {
+func TestEdit(t *testing.T) {
 	cipher, err := encryptFileCTR("./data/25_plain.txt", cryptopals.RANDOM_KEY, 0)
 	if err != nil {
 		t.Errorf("Error encrypting file: %s", err)
 	}
-	_ := EditCTR(cipher, cryptopals.RANDOM_KEY, 16, "Mom's Spaghetti")
+	result := Edit(cipher, cryptopals.RANDOM_KEY, 17, []byte("Mom's Spaghetti,"))
+
+	block, err := aes.NewCipher(cryptopals.RANDOM_KEY)
+	if err != nil {
+		t.Errorf("Error creating AES cipher")
+	}
+
+	blockMode := cryptopals.NewCTR(block, 0)
+	decrypted := make([]byte, len(result))
+	blockMode.CryptBlocks(decrypted, result)
+	t.Log(string(decrypted))
 }

@@ -19,7 +19,7 @@ func TestCTREncrypt(t *testing.T) {
 	blockMode.CryptBlocks(encrypted, plaintext)
 }
 
-func TestCTRKeystreamRange(t *testing.T) {
+func TestCTRKeystreamBytes(t *testing.T) {
 	block, err := aes.NewCipher([]byte("YELLOW SUBMARINE"))
 	if err != nil {
 		t.Errorf("Failed creating AES block: %s", err)
@@ -28,7 +28,7 @@ func TestCTRKeystreamRange(t *testing.T) {
 	blockMode := NewCTR(block, 0)
 
 	expected := []byte{118, 209, 203, 75, 175, 162, 70, 226, 227, 175, 3, 93, 108, 19, 195, 114}
-	keystream := blockMode.KeystreamRange(0, 16)
+	keystream := blockMode.KeystreamBytes(0, 16)
 
 	if len(keystream) != 16 {
 		t.Errorf("Keystream length incorrect: %d", len(keystream))
@@ -43,7 +43,7 @@ func TestCTRKeystreamRange(t *testing.T) {
 	}
 }
 
-func TestCTRPartialKeystreamRange(t *testing.T) {
+func TestCTRPartialKeystreamBytes(t *testing.T) {
 	block, err := aes.NewCipher([]byte("YELLOW SUBMARINE"))
 	if err != nil {
 		t.Errorf("Failed creating AES block: %s", err)
@@ -52,7 +52,7 @@ func TestCTRPartialKeystreamRange(t *testing.T) {
 	blockMode := NewCTR(block, 0)
 
 	expected := []byte{175, 3, 93, 108, 19, 195, 114, 210, 236, 108, 220, 152, 109, 18, 222, 207, 218}
-	keystream := blockMode.KeystreamRange(9, 17)
+	keystream := blockMode.KeystreamBytes(9, 17)
 
 	if len(keystream) != 17 {
 		t.Errorf("Keystream length incorrect: %d", len(keystream))
@@ -63,7 +63,7 @@ func TestCTRPartialKeystreamRange(t *testing.T) {
 	}
 }
 
-func TestCTRKeystreamRangeSingleByte(t *testing.T) {
+func TestCTRKeystreamByteseSingleByte(t *testing.T) {
 	block, err := aes.NewCipher([]byte("YELLOW SUBMARINE"))
 	if err != nil {
 		t.Errorf("Failed creating AES block: %s", err)
@@ -72,7 +72,7 @@ func TestCTRKeystreamRangeSingleByte(t *testing.T) {
 	blockMode := NewCTR(block, 0)
 
 	expected := []byte{236}
-	keystream := blockMode.KeystreamRange(17, 1)
+	keystream := blockMode.KeystreamBytes(17, 1)
 
 	if len(keystream) != 1 {
 		t.Errorf("Keystream length incorrect: %d", len(keystream))

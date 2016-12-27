@@ -37,7 +37,7 @@ func (x *ctr) Nonce() []byte {
 
 // Generate specific bytes of the keystream
 // Returns `length` bytes at `offset` from the keystream
-func (x *ctr) KeystreamRange(offset, length int) []byte {
+func (x *ctr) KeystreamBytes(offset, length int) []byte {
 	var result bytes.Buffer
 	// Save and restore the original counter
 	// This isn't thread safe but idgaf
