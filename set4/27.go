@@ -1,8 +1,8 @@
 /*
  * Recover the key from CBC with IV=Key
  *
- * Take your code from the CBC exercise and modify it so that it repurposes the
- *  key for CBC encryption as the IV.
+ * Take your code from the CBC exercise (16) and modify it so that it
+ * repurposes the key for CBC encryption as the IV.
  *
  * Applications sometimes use the key as an IV on the auspices that both the
  * sender and the receiver have to know the key already, and can save some
@@ -15,7 +15,7 @@
  * plaintext for ASCII compliance (ie, look for high-ASCII values).
  * Noncompliant messages should raise an exception or return an error that
  * includes the decrypted plaintext (this happens all the time in real systems,
- *  for what it's worth).
+ * for what it's worth).
  *
  * Use your code to encrypt a message that is at least 3 blocks long:
  *
