@@ -45,23 +45,22 @@ func DecryptCommentAndCheckAdmin(input []byte) (bool, error) {
 }
 
 // Inject `;admin=true;` into an encrypted comment and return the ciphertext
-// TODO(dw): Make this work for CTR
 func BitflipInjectAdmin(ciphertext []byte) ([]byte, error) {
-	blockSize := 16
-	inject := []byte(";admin=true;lol=")
-	secondBlock := []byte("%20MCs;userdata=")
+	inject := []byte(";admin=true;")
+	// Arbitrarily inject at the 11th position in the ciphertext
+	start := 11
+	end := start + len(inject)
+	knownPlaintext := []byte("oking%20MCs;")
 
-	// XOR the plaintext of the second block with the ciphertext of the first
-	// block to determine the encrypted value without the CBC XOR
-	if err := cryptopals.FixedXOR(secondBlock, ciphertext[:blockSize]); err != nil {
+	// XOR the known plaintext with the ciphertext to get the keystream value
+	if err := cryptopals.FixedXOR(ciphertext[start:end], knownPlaintext); err != nil {
 		return []byte{}, err
 	}
 
-	// XOR the encrypted block with the injected admin block to find out what we
-	// should set our ciphertext block to.
-	if err := cryptopals.FixedXOR(inject, secondBlock); err != nil {
+	// Now XOR the keystream with the data we want to inject to encrypt it
+	if err := cryptopals.FixedXOR(ciphertext[start:end], inject); err != nil {
 		return []byte{}, err
 	}
 
-	return append(inject, ciphertext[blockSize:]...), nil
+	return ciphertext, nil
 }
