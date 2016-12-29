@@ -19,3 +19,18 @@
  */
 
 package set_four
+
+import (
+	"bytes"
+	"crypto/sha1"
+)
+
+var SecretPrefix = []byte("\x00\x01Super Secret Prefix\x02\x03")
+
+func ValidateSHA1(message, mac []byte) bool {
+	sha := sha1.New()
+	sha.Write(SecretPrefix)
+	sha.Write(message)
+	h := sha.Sum(nil)
+	return bytes.Compare(h, mac) == 0
+}
