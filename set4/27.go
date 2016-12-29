@@ -35,3 +35,37 @@
  */
 
 package set_four
+
+import (
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
+// Returns false if any values in input are invalid ASCII (>127)
+func validASCII(input []byte) bool {
+	for i := 0; i < len(input); i++ {
+		if input[i] > 127 {
+			return false
+		}
+	}
+	return true
+}
+
+// Validates that plaintext is valid ASCII and then encrypts with CBC
+// using the same value for the key and IV
+// If the ASCII is invalid, an error is returned along with the original plaintext.
+func ValidateAndEncrypt(plaintext []byte) ([]byte, error) {
+	encrypted, err := cryptopals.EncryptAESCBC(plaintext, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
+	if err != nil {
+		return []byte{}, err
+	}
+	return encrypted, nil
+}
+
+func DecryptAndValidate(cipher []byte) ([]byte, error) {
+	decrypted, err := cryptopals.DecryptAESCBC(cipher, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
+	if err != nil {
+		return []byte{}, err
+	}
+	decrypted = cryptopals.MaybePKCS7Unpad(decrypted)
+	return decrypted, nil
+}
