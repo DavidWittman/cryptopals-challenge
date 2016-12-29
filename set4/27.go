@@ -37,6 +37,8 @@
 package set_four
 
 import (
+	"bytes"
+
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
@@ -86,4 +88,51 @@ func DecryptAndValidate(cipher []byte) ([]byte, error) {
 
 	plaintext = cryptopals.MaybePKCS7Unpad(plaintext)
 	return plaintext, nil
+}
+
+// Generate plaintext, encrypt, and feed it to our attack code
+func Challenge27() ([]byte, error) {
+	cipher, err := ValidateAndEncrypt(bytes.Repeat([]byte("YELLOW SUBMARINE"), 3))
+	if err != nil {
+		return []byte{}, err
+	}
+	return ExtractKey(cipher), nil
+}
+
+// Given a ciphertext at least three blocks in length, extract the key.
+// The reason this works is because during decryption, CBC will use the cipher
+// of the second block (which we're injecting as all 0s) and XOR that against
+// the third block, which we have injected to be the same as the first block.
+// So effectively we have P1 which is the actual decrypted first block, and
+// P'1 which is P1 before being XORed with the IV (or key). XORing these
+// values together reveals the key.
+func ExtractKey(cipher []byte) []byte {
+	var attackCipher bytes.Buffer
+
+	blockSize := 16
+	if len(cipher) < (blockSize * 3) {
+		panic("Cipher must be at least 3 blocks long")
+	}
+
+	// C1 || 0 * blockSize || C1
+	attackCipher.Write(cipher[:blockSize])
+	attackCipher.Write(bytes.Repeat([]byte{0}, blockSize))
+	attackCipher.Write(cipher[:blockSize])
+
+	output, err := DecryptAndValidate(attackCipher.Bytes())
+	if err != nil {
+		// Ignore the Invalid ASCII errors. TBH I'm not even sure why
+		// I even went through the trouble of raising these errors
+		if _, ok := err.(InvalidASCIIError); !ok {
+			panic(err)
+		}
+	}
+
+	// KEY = P'1 ^ P'3
+	err = cryptopals.FixedXOR(output[:blockSize], output[blockSize*2:blockSize*3])
+	if err != nil {
+		panic(err)
+	}
+
+	return output[:blockSize]
 }

@@ -79,3 +79,13 @@ func TestDecryptAndValidateErrorType(t *testing.T) {
 		t.Errorf("Decryption failed.\nExpected:\t%v\nGot:\t\t%v", input, result)
 	}
 }
+
+func TestChallenge27(t *testing.T) {
+	result, err := Challenge27()
+	if err != nil {
+		t.Errorf("Error: %v", err)
+	}
+	if bytes.Compare(result, cryptopals.RANDOM_KEY) != 0 {
+		t.Errorf("Extracted key does not match.\nExpected:\t%v\nGot:\t\t%v", cryptopals.RANDOM_KEY, result)
+	}
+}
