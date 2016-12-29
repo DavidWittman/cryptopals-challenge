@@ -58,9 +58,10 @@ func validASCII(input []byte) bool {
 	return true
 }
 
-// Validates that plaintext is valid ASCII and then encrypts with CBC
-// using the same value for the key and IV
-// If the ASCII is invalid, an error is returned along with the original plaintext.
+// Validates that plaintext is valid ASCII and then encrypts with CBC using the
+// same random value for the key and IV.
+// If the ASCII is invalid, an InvalidASCIIError is returned along with the
+// original plaintext.
 func ValidateAndEncrypt(plaintext []byte) ([]byte, error) {
 	if !validASCII(plaintext) {
 		return plaintext, InvalidASCIIError{"Plaintext contains invalid ASCII characters"}
@@ -72,11 +73,17 @@ func ValidateAndEncrypt(plaintext []byte) ([]byte, error) {
 	return encrypted, nil
 }
 
+// Decrypts a cipher using the same random value for key and IV
+// If the decrypted plaintext is invalid, an InvalidASCIIError is returned.
 func DecryptAndValidate(cipher []byte) ([]byte, error) {
-	decrypted, err := cryptopals.DecryptAESCBC(cipher, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
+	plaintext, err := cryptopals.DecryptAESCBC(cipher, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
 	if err != nil {
 		return []byte{}, err
 	}
-	decrypted = cryptopals.MaybePKCS7Unpad(decrypted)
-	return decrypted, nil
+	if !validASCII(plaintext) {
+		return plaintext, InvalidASCIIError{"Decrypted plaintext contains invalid ASCII characters"}
+	}
+
+	plaintext = cryptopals.MaybePKCS7Unpad(plaintext)
+	return plaintext, nil
 }

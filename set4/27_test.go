@@ -3,6 +3,8 @@ package set_four
 import (
 	"bytes"
 	"testing"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 func TestValidASCII(t *testing.T) {
@@ -45,5 +47,35 @@ func TestValidateAndEncryptErrorType(t *testing.T) {
 	}
 	if bytes.Compare(result, input) != 0 {
 		t.Errorf("Plaintext value not returned correctly: %v", result)
+	}
+}
+
+func TestDecryptAndValidate(t *testing.T) {
+	input := []byte("this is just a message to encrypt that is more than three blocks long")
+	encrypted, err := cryptopals.EncryptAESCBC(input, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
+	if err != nil {
+		t.Errorf("Error encrypting input for test. Likely unrelated.")
+	}
+	result, err := DecryptAndValidate(encrypted)
+	if err != nil {
+		t.Errorf("Error decrypting and validating: %v", err)
+	}
+	if bytes.Compare(cryptopals.MaybePKCS7Unpad(result), input) != 0 {
+		t.Errorf("Decryption failed.\nExpected:\t%v\nGot:\t\t%v", input, result)
+	}
+}
+
+func TestDecryptAndValidateErrorType(t *testing.T) {
+	input := []byte{0x41, 0x41, 129, 0x42, 0x43}
+	encrypted, err := cryptopals.EncryptAESCBC(input, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
+	if err != nil {
+		t.Errorf("Error encrypting input for test. Likely unrelated.")
+	}
+	result, err := DecryptAndValidate(encrypted)
+	if _, ok := err.(InvalidASCIIError); !ok {
+		t.Errorf("Invalid error type returned: %v", err)
+	}
+	if bytes.Compare(cryptopals.MaybePKCS7Unpad(result), input) != 0 {
+		t.Errorf("Decryption failed.\nExpected:\t%v\nGot:\t\t%v", input, result)
 	}
 }
