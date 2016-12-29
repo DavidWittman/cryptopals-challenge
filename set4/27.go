@@ -40,6 +40,14 @@ import (
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
+type InvalidASCIIError struct {
+	msg string
+}
+
+func (e InvalidASCIIError) Error() string {
+	return e.msg
+}
+
 // Returns false if any values in input are invalid ASCII (>127)
 func validASCII(input []byte) bool {
 	for i := 0; i < len(input); i++ {
@@ -54,6 +62,9 @@ func validASCII(input []byte) bool {
 // using the same value for the key and IV
 // If the ASCII is invalid, an error is returned along with the original plaintext.
 func ValidateAndEncrypt(plaintext []byte) ([]byte, error) {
+	if !validASCII(plaintext) {
+		return plaintext, InvalidASCIIError{"Plaintext contains invalid ASCII characters"}
+	}
 	encrypted, err := cryptopals.EncryptAESCBC(plaintext, cryptopals.RANDOM_KEY, cryptopals.RANDOM_KEY)
 	if err != nil {
 		return []byte{}, err
