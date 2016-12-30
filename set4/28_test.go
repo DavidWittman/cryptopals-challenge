@@ -18,3 +18,19 @@ func TestValidateSHA1(t *testing.T) {
 		}
 	}
 }
+
+func TestTamperMessage(t *testing.T) {
+	message := []byte("this is the message")
+	mac := "a0585899eaf1586b0596944c04c8959a87d34473"
+	if err := TamperMessage(message, mac); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestRandomBytesDontMatch(t *testing.T) {
+	mac := "a0585899eaf1586b0596944c04c8959a87d34473"
+	iterations := 1000
+	if err := RandomBytesDontMatch(mac, iterations); err != nil {
+		t.Error(err)
+	}
+}

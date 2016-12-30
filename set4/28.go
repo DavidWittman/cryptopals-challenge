@@ -23,6 +23,10 @@ package set_four
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
+	"math/rand"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 var SecretPrefix = []byte("\x00\x01Super Secret Prefix\x02\x03")
@@ -35,5 +39,31 @@ func ValidateSHA1(message []byte, mac string) bool {
 	return hex.EncodeToString(h) == mac
 }
 
-// TODO(dw): Tamper with the message by modifying bits in it without reproducing the MAC
+// Tamper `message` by modifying random bits in it and then comparing to
+// the provided `mac`. If there is a match, an error is returned.
+func TamperMessage(message []byte, mac string) error {
+	for i := 0; i < len(message); i++ {
+		for j := 0; j < 8; j++ {
+			// Tamper bit j in byte i
+			message[i] ^= (1 << uint(j))
+			if ValidateSHA1(message, mac) {
+				return fmt.Errorf("Tampered message matches MAC. Message: %v", message)
+			}
+			// Toggle bit back to what it was before
+			message[i] ^= (1 << uint(j))
+		}
+	}
+	return nil
+}
+
 // Generate random bits and try to reproduce the MAC
+func RandomBytesDontMatch(mac string, iterations int) error {
+	maxBytes := 1024
+	for i := 0; i < iterations; i++ {
+		randBytes, _ := cryptopals.GenerateRandomBytes(rand.Intn(maxBytes))
+		if ValidateSHA1(randBytes, mac) {
+			return fmt.Errorf("Random message matches MAC. Message: %v", randBytes)
+		}
+	}
+	return nil
+}
