@@ -21,16 +21,19 @@
 package set_four
 
 import (
-	"bytes"
 	"crypto/sha1"
+	"encoding/hex"
 )
 
 var SecretPrefix = []byte("\x00\x01Super Secret Prefix\x02\x03")
 
-func ValidateSHA1(message, mac []byte) bool {
+func ValidateSHA1(message []byte, mac string) bool {
 	sha := sha1.New()
 	sha.Write(SecretPrefix)
 	sha.Write(message)
 	h := sha.Sum(nil)
-	return bytes.Compare(h, mac) == 0
+	return hex.EncodeToString(h) == mac
 }
+
+// TODO(dw): Tamper with the message by modifying bits in it without reproducing the MAC
+// Generate random bits and try to reproduce the MAC
