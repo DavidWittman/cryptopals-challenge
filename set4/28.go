@@ -21,7 +21,6 @@
 package set_four
 
 import (
-	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
@@ -32,7 +31,7 @@ import (
 var SecretPrefix = []byte("\x00\x01Super Secret Prefix\x02\x03")
 
 func ValidateSHA1(message []byte, mac string) bool {
-	sha := sha1.New()
+	sha := cryptopals.NewSHA1()
 	sha.Write(SecretPrefix)
 	sha.Write(message)
 	h := sha.Sum(nil)
