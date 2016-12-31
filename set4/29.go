@@ -54,3 +54,32 @@
  */
 
 package set_four
+
+import "bytes"
+
+// Adapted from crypto/sha1/sha1.go
+func SHA1Pad(message []byte) []byte {
+	var result bytes.Buffer
+	result.Write(message)
+
+	length := len(message)
+
+	// Padding.  Add a 1 bit and 0 bits until len(result) % 64 == 56
+	// This allows us add a 8 byte integer to the end and align with the 64-byte block size
+	var tmp [64]byte
+	tmp[0] = 0x80
+	if length%64 < 56 {
+		result.Write(tmp[0 : 56-length%64])
+	} else {
+		result.Write(tmp[0 : 64+56-length%64])
+	}
+
+	// Length in bits.
+	length <<= 3
+	for i := uint(0); i < 8; i++ {
+		tmp[i] = byte(length >> (56 - 8*i))
+	}
+	result.Write(tmp[0:8])
+
+	return result.Bytes()
+}
