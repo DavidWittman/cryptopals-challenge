@@ -66,9 +66,8 @@ import (
 
 type ValidationFunction func([]byte, string) bool
 
-// Merkle-Damgard padding
 // Adapted from crypto/sha1/sha1.go
-func MDPad(message []byte) []byte {
+func SHA1Pad(message []byte) []byte {
 	var result bytes.Buffer
 	result.Write(message)
 
@@ -135,7 +134,7 @@ func SHA1LengthExtension(mac string, message, attack []byte, validate Validation
 	//  7. Attempt to validate our checksum and message against the validation function
 	for i := 1; i <= maxLength; i++ {
 		// Make a prefix of length i and just take the message and pad from it
-		messageWithPad := MDPad(append(bytes.Repeat([]byte("A"), i), message...))[i:]
+		messageWithPad := SHA1Pad(append(bytes.Repeat([]byte("A"), i), message...))[i:]
 		length := uint64(len(messageWithPad) + i)
 
 		// Clone the state of the known-good SHA1 by passing in the extracted

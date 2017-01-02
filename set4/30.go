@@ -17,7 +17,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals/md4"
@@ -29,6 +28,35 @@ func ValidateSecretPrefixMD4(message []byte, mac string) bool {
 	md.Write(message)
 	h := md.Sum(nil)
 	return hex.EncodeToString(h) == mac
+}
+
+// Adapted from golang.org/x/crypto/md4/md4.go
+// The only difference between this pad and SHA1PAd is that the 64-bit length
+// appended to the end of the pad is little-endian.
+func MD4Pad(message []byte) []byte {
+	var result bytes.Buffer
+	result.Write(message)
+
+	length := len(message)
+
+	// Padding.  Add a 1 bit and 0 bits until len(result) % 64 == 56
+	// This allows us add a 8 byte integer to the end and align with the 64-byte block size
+	var tmp [64]byte
+	tmp[0] = 0x80
+	if length%64 < 56 {
+		result.Write(tmp[0 : 56-length%64])
+	} else {
+		result.Write(tmp[0 : 64+56-length%64])
+	}
+
+	// Length in bits.
+	length <<= 3
+	for i := uint(0); i < 8; i++ {
+		tmp[i] = byte(length >> (8 * i))
+	}
+	result.Write(tmp[0:8])
+
+	return result.Bytes()
 }
 
 // Extract the 4 registers from a MD4 sum
@@ -47,7 +75,7 @@ func GetMD4Registers(mac string) [4]uint32 {
 	}
 
 	for i := 0; i < len(registers); i++ {
-		states[i] = binary.BigEndian.Uint32(registers[i])
+		states[i] = binary.LittleEndian.Uint32(registers[i])
 	}
 
 	return states
@@ -58,14 +86,13 @@ func GetMD4Registers(mac string) [4]uint32 {
 // message and valid MAC are returned.
 func MD4LengthExtension(mac string, message, attack []byte, validate ValidationFunction) (string, []byte) {
 	// Maximum length for the secret prefix
-	// TODO(dw): Reset to 256
-	maxLength := 23
+	maxLength := 256
 
 	registers := GetMD4Registers(mac)
 
 	for i := 1; i <= maxLength; i++ {
 		// Make a prefix of length i and just take the message and pad from it
-		messageWithPad := MDPad(append(bytes.Repeat([]byte("A"), i), message...))[i:]
+		messageWithPad := MD4Pad(append(bytes.Repeat([]byte("A"), i), message...))[i:]
 		length := uint64(len(messageWithPad) + i)
 
 		// Clone the state of the known-good MD4 by passing in the extracted
@@ -73,7 +100,6 @@ func MD4LengthExtension(mac string, message, attack []byte, validate ValidationF
 		md := md4.NewExtension(registers, length)
 		md.Write(attack)
 		newMAC := hex.EncodeToString(md.Sum(nil))
-		fmt.Println(length, messageWithPad)
 
 		newMessage := append(messageWithPad, attack...)
 
