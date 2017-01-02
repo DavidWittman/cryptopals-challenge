@@ -52,7 +52,7 @@ func TestChallenge29(t *testing.T) {
 	}
 
 	start := len(message) - len(attack)
-	if string(message[start:]) == attack {
+	if string(message[start:]) != attack {
 		t.Errorf("%s was not successfully added to authenticated message.", attack)
 	}
 }
