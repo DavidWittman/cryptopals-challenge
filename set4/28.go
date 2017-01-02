@@ -30,7 +30,7 @@ import (
 
 var SecretPrefix = []byte("\x00\x01Super Secret Prefix\x02\x03")
 
-func ValidateSHA1(message []byte, mac string) bool {
+func ValidateSecretPrefixSHA1(message []byte, mac string) bool {
 	sha := cryptopals.NewSHA1()
 	sha.Write(SecretPrefix)
 	sha.Write(message)
@@ -45,7 +45,7 @@ func TamperMessage(message []byte, mac string) error {
 		for j := 0; j < 8; j++ {
 			// Tamper bit j in byte i
 			message[i] ^= (1 << uint(j))
-			if ValidateSHA1(message, mac) {
+			if ValidateSecretPrefixSHA1(message, mac) {
 				return fmt.Errorf("Tampered message matches MAC. Message: %v", message)
 			}
 			// Toggle bit back to what it was before
@@ -60,7 +60,7 @@ func RandomBytesDontMatch(mac string, iterations int) error {
 	maxBytes := 1024
 	for i := 0; i < iterations; i++ {
 		randBytes, _ := cryptopals.GenerateRandomBytes(rand.Intn(maxBytes))
-		if ValidateSHA1(randBytes, mac) {
+		if ValidateSecretPrefixSHA1(randBytes, mac) {
 			return fmt.Errorf("Random message matches MAC. Message: %v", randBytes)
 		}
 	}

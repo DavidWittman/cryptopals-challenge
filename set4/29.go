@@ -55,7 +55,15 @@
 
 package set_four
 
-import "bytes"
+import (
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
+type ValidationFunction func([]byte, string) bool
 
 // Adapted from crypto/sha1/sha1.go
 func SHA1Pad(message []byte) []byte {
@@ -82,4 +90,64 @@ func SHA1Pad(message []byte) []byte {
 	result.Write(tmp[0:8])
 
 	return result.Bytes()
+}
+
+// Extract the 5 registers from a SHA1 sum
+func GetSHA1Registers(mac string) [5]uint32 {
+	var states [5]uint32
+
+	hashBytes, err := hex.DecodeString(mac)
+	if err != nil {
+		panic(err)
+	}
+	// Split into 32-bit registers
+	registers := cryptopals.SplitBytes(hashBytes, 4)
+
+	if len(registers) != 5 {
+		panic("Invalid SHA1 hash length")
+	}
+
+	for i := 0; i < len(registers); i++ {
+		states[i] = binary.BigEndian.Uint32(registers[i])
+	}
+
+	return states
+}
+
+// Performs a SHA-1 length extension on the provided mac and message.
+// The attack bytes are appended to the message (with padding) and and the resulting
+// message and valid MAC are returned.
+func SHA1LengthExtension(mac string, message, attack []byte, validate ValidationFunction) (string, []byte) {
+	// Maximum length for the secret prefix
+	maxLength := 256
+
+	registers := GetSHA1Registers(mac)
+
+	//  1. Generate message + gluePad for the given prefix length i
+	//  2. Calculate length of (guessedSecretLen + message + gluePad). This is
+	//     needed for cloning the state of the SHA1 sum
+	//  3. Create a clone of the SHA1 sum with NewSHA1Extension
+	//  4. Append our extension to the SHA1 sum with cloned state
+	//  5. Calculate the checksum for our new message
+	//  6. Concatenate message + gluePad + attack to form our guess for the valid message
+	//  7. Attempt to validate our checksum and message against the validation function
+	for i := 1; i <= maxLength; i++ {
+		// Make a prefix of length i and just take the message and pad from it
+		messageWithPad := SHA1Pad(append(bytes.Repeat([]byte("A"), i), message...))[i:]
+		length := uint64(len(messageWithPad) + i)
+
+		// Clone the state of the known-good SHA1 by passing in the extracted
+		// registers and guessed length of (secret + messageWithPad)
+		sha1 := cryptopals.NewSHA1Extension(registers, length)
+		sha1.Write(attack)
+		newMAC := hex.EncodeToString(sha1.Sum(nil))
+
+		newMessage := append(messageWithPad, attack...)
+
+		if validate(newMessage, newMAC) {
+			return newMAC, newMessage
+		}
+	}
+
+	return "", []byte{}
 }

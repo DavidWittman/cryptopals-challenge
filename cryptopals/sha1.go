@@ -53,6 +53,25 @@ func NewSHA1() hash.Hash {
 	return d
 }
 
+// Set the state of the SHA-1 function by overriding the registers and length value
+// This allows for length extension attacks
+//
+// The description doesn't say we need to override the length, but this
+// implementation needs it to appropriately capture the state of the previous
+// SHA1 generation. Typically this length is guessed and checked against a
+// validation function until the correct value is brute forced.
+func NewSHA1Extension(h [5]uint32, len uint64) hash.Hash {
+	d := new(digest)
+	d.Reset()
+	d.h[0] = h[0]
+	d.h[1] = h[1]
+	d.h[2] = h[2]
+	d.h[3] = h[3]
+	d.h[4] = h[4]
+	d.len = len
+	return d
+}
+
 func (d *digest) Size() int { return Size }
 
 func (d *digest) BlockSize() int { return BlockSize }
