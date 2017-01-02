@@ -42,3 +42,17 @@ func TestSHA1LengthExtension(t *testing.T) {
 		t.Errorf("Extension failed. Got: %s Expected: %s", mac, expectedMAC)
 	}
 }
+
+func TestChallenge29(t *testing.T) {
+	attack := ";admin=true"
+	mac, message := Challenge29()
+
+	if !ValidateSecretPrefixSHA1(message, mac) {
+		t.Errorf("Length extension attack for challenge 29 failed to validate")
+	}
+
+	start := len(message) - len(attack)
+	if string(message[start:]) == attack {
+		t.Errorf("%s was not successfully added to authenticated message.", attack)
+	}
+}

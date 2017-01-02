@@ -151,3 +151,11 @@ func SHA1LengthExtension(mac string, message, attack []byte, validate Validation
 
 	return "", []byte{}
 }
+
+func Challenge29() (string, []byte) {
+	message := []byte("comment1=cooking%20MCs;userdata=foo;comment2=%20like%20a%20pound%20of%20bacon")
+	knownMAC := "b325d7b430b2c755ca3f298dbeb746020e01449d"
+	attack := []byte(";admin=true")
+
+	return SHA1LengthExtension(knownMAC, message, attack, ValidateSecretPrefixSHA1)
+}
