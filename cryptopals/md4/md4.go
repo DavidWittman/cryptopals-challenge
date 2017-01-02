@@ -52,6 +52,18 @@ func New() hash.Hash {
 	return d
 }
 
+// NewExtension creates a new MD4 hash extension attack hash
+func NewExtension(s [4]uint32, length uint64) hash.Hash {
+	d := new(digest)
+	d.Reset()
+	d.s[0] = s[0]
+	d.s[1] = s[1]
+	d.s[2] = s[2]
+	d.s[3] = s[3]
+	d.len = length
+	return d
+}
+
 func (d *digest) Size() int { return Size }
 
 func (d *digest) BlockSize() int { return BlockSize }
