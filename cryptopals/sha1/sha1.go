@@ -5,7 +5,7 @@
 // license that can be found in the LICENSE file.
 
 // Package sha1 implements the SHA1 hash algorithm as defined in RFC 3174.
-package cryptopals
+package sha1
 
 import (
 	"hash"
@@ -47,7 +47,7 @@ func (d *digest) Reset() {
 }
 
 // New returns a new hash.Hash computing the SHA1 checksum.
-func NewSHA1() hash.Hash {
+func New() hash.Hash {
 	d := new(digest)
 	d.Reset()
 	return d
@@ -60,7 +60,7 @@ func NewSHA1() hash.Hash {
 // implementation needs it to appropriately capture the state of the previous
 // SHA1 generation. Typically this length is guessed and checked against a
 // validation function until the correct value is brute forced.
-func NewSHA1Extension(h [5]uint32, len uint64) hash.Hash {
+func NewExtension(h [5]uint32, len uint64) hash.Hash {
 	d := new(digest)
 	d.Reset()
 	d.h[0] = h[0]

@@ -26,12 +26,13 @@ import (
 	"math/rand"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals/sha1"
 )
 
 var SecretPrefix = []byte("\x00\x01Super Secret Prefix\x02\x03")
 
 func ValidateSecretPrefixSHA1(message []byte, mac string) bool {
-	sha := cryptopals.NewSHA1()
+	sha := sha1.New()
 	sha.Write(SecretPrefix)
 	sha.Write(message)
 	h := sha.Sum(nil)

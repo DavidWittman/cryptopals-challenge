@@ -61,6 +61,7 @@ import (
 	"encoding/hex"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals/sha1"
 )
 
 type ValidationFunction func([]byte, string) bool
@@ -138,7 +139,7 @@ func SHA1LengthExtension(mac string, message, attack []byte, validate Validation
 
 		// Clone the state of the known-good SHA1 by passing in the extracted
 		// registers and guessed length of (secret + messageWithPad)
-		sha1 := cryptopals.NewSHA1Extension(registers, length)
+		sha1 := sha1.NewExtension(registers, length)
 		sha1.Write(attack)
 		newMAC := hex.EncodeToString(sha1.Sum(nil))
 

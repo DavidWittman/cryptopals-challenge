@@ -4,7 +4,7 @@
 
 // SHA1 hash algorithm.  See RFC 3174.
 
-package cryptopals
+package sha1
 
 import (
 	"crypto/rand"
@@ -59,7 +59,7 @@ func TestGolden(t *testing.T) {
 		if s != g.out {
 			t.Fatalf("Sum function: sha1(%s) = %s want %s", g.in, s, g.out)
 		}
-		c := NewSHA1()
+		c := New()
 		for j := 0; j < 3; j++ {
 			if j < 2 {
 				io.WriteString(c, g.in)
@@ -78,14 +78,14 @@ func TestGolden(t *testing.T) {
 }
 
 func TestSize(t *testing.T) {
-	c := NewSHA1()
+	c := New()
 	if got := c.Size(); got != Size {
 		t.Errorf("Size = %d; want %d", got, Size)
 	}
 }
 
 func TestBlockSize(t *testing.T) {
-	c := NewSHA1()
+	c := New()
 	if got := c.BlockSize(); got != BlockSize {
 		t.Errorf("BlockSize = %d; want %d", got, BlockSize)
 	}
@@ -93,7 +93,7 @@ func TestBlockSize(t *testing.T) {
 
 // Tests that blockGeneric (pure Go) and block (in assembly for amd64, 386, arm) match.
 func TestBlockGeneric(t *testing.T) {
-	gen, asm := NewSHA1().(*digest), NewSHA1().(*digest)
+	gen, asm := New().(*digest), New().(*digest)
 	buf := make([]byte, BlockSize*20) // arbitrary factor
 	rand.Read(buf)
 	blockGeneric(gen, buf)
@@ -103,7 +103,7 @@ func TestBlockGeneric(t *testing.T) {
 	}
 }
 
-var bench = NewSHA1()
+var bench = New()
 var buf = make([]byte, 8192)
 
 func benchmarkSize(b *testing.B, size int) {
