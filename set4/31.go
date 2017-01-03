@@ -40,3 +40,15 @@
  */
 
 package set_four
+
+import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
+)
+
+func SHA256HMAC(key, message []byte) string {
+	mac := hmac.New(sha256.New, key)
+	mac.Write(message)
+	return hex.EncodeToString(mac.Sum(nil))
+}
