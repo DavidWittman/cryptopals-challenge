@@ -45,10 +45,31 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 )
 
 func SHA256HMAC(key, message []byte) string {
 	mac := hmac.New(sha256.New, key)
 	mac.Write(message)
 	return hex.EncodeToString(mac.Sum(nil))
+}
+
+// Insecurely implements == by doing a byte-at-a-time comparison of a and b
+// It is insecure because there is a timing leak, which is controlled by
+// the parameter `delay`, which sets the number of milliseconds to sleep
+// after comparing each byte.
+// Returns false immediately if the lengths do not match
+func InsecureCompare(a, b []byte, delay uint8) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i := 0; i < len(a); i++ {
+		time.Sleep(time.Duration(delay) * time.Millisecond)
+		if a[i] != b[i] {
+			return false
+		}
+	}
+
+	return true
 }

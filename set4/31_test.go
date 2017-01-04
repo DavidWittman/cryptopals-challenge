@@ -12,3 +12,19 @@ func TestSHA256HMAC(t *testing.T) {
 		t.Errorf("Incorrect HMAC generated.\nExpected:\t%v\nGot:\t\t%v", expected, result)
 	}
 }
+
+func TestInsecureCompare(t *testing.T) {
+	// Not testing any of the timing stuff here
+	for _, tt := range []struct {
+		a, b     []byte
+		expected bool
+	}{
+		{[]byte("yellow"), []byte("yellow"), true},
+		{[]byte("submarine"), []byte("sub"), false},
+		{[]byte("we all live"), []byte("we all love"), false},
+	} {
+		if result := InsecureCompare(tt.a, tt.b, uint8(1)); result != tt.expected {
+			t.Errorf("InsecureCompare failed for %+v", tt)
+		}
+	}
+}
