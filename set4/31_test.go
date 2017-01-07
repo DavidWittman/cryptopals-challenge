@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-	StartServer(":8771")
+	StartServer()
 }
 
 func TestSHA256HMAC(t *testing.T) {
@@ -33,4 +33,23 @@ func TestInsecureCompare(t *testing.T) {
 			t.Errorf("InsecureCompare failed for %+v", tt)
 		}
 	}
+}
+
+func TestFindSlowestRequest(t *testing.T) {
+	input := map[string]int64{
+		"a": 42,
+		"b": 2,
+		"c": 2000000,
+		"d": 0,
+	}
+	result := findSlowestRequest(input)
+	if result != "c" {
+		t.Errorf("Incorrect result: %s", result)
+	}
+}
+
+func TestExploitTimingAttack(t *testing.T) {
+	result := ExploitTimingAttack("http://localhost:8771/test?file=foo&signature=", 64)
+	// TODO(dw): Check that the response is 200
+	t.Log(result)
 }

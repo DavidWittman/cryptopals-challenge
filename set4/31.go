@@ -45,7 +45,9 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
@@ -58,7 +60,7 @@ const COMPARE_DELAY = 50
 const LISTEN_ADDR = ":8771"
 
 // Start the validation server at /test
-func StartServer(addr string) {
+func StartServer() {
 	http.HandleFunc("/test", ValidationServer)
 	go http.ListenAndServe(LISTEN_ADDR, nil)
 }
@@ -105,4 +107,62 @@ func InsecureCompare(a, b []byte, delay uint8) bool {
 	}
 
 	return true
+}
+
+// Iterates over a map of bytes and returns the key with the longest value
+func findSlowestRequest(requests map[string]int64) string {
+	slowest := int64(0)
+	slowestKey := ""
+
+	for key, value := range requests {
+		if value > slowest {
+			slowest = value
+			slowestKey = key
+		}
+	}
+
+	return slowestKey
+}
+
+// Exploits a comparison timing attack in url
+// `url` is the full path to the http endpoint to attack against. The guesses
+// will be appended to this string. Ex. "localhost:8771/test?file=foo&signature="
+// Endpoint is expected to return 200 when the signature successfully validates
+// Returns an empty string if no result is found
+func ExploitTimingAttack(url string, length int) string {
+	var known string
+	chars := "012345678abcdef"
+
+	for i := 0; i < length; i++ {
+		requests := make(map[string]int64)
+		// Fill in the rest of the signature with a character that won't match
+		filler := strings.Repeat("_", length-(i+1))
+
+		for j := 0; j < len(chars); j++ {
+			signature := strings.Join([]string{known, string(chars[j]), filler}, "")
+			urlWithSig := strings.Join([]string{url, signature}, "")
+
+			fmt.Println(signature)
+			elapsed, resp := TimeHTTPRequest(urlWithSig)
+			if resp.StatusCode == http.StatusOK {
+				return strings.Join([]string{known, string(chars[j])}, "")
+			}
+			requests[string(chars[j])] = elapsed
+		}
+
+		bestGuess := findSlowestRequest(requests)
+		known = strings.Join([]string{known, bestGuess}, "")
+	}
+
+	return ""
+}
+
+func TimeHTTPRequest(url string) (int64, *http.Response) {
+	start := time.Now()
+	resp, err := http.Get(url)
+	if err != nil {
+		panic(err)
+	}
+	resp.Body.Close()
+	return time.Since(start).Nanoseconds(), resp
 }
