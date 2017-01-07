@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// This is kinda jank. It starts the server for both challenge 31 and 32.
+// This means running the test for 32 is dependent on this test too.
 func init() {
 	StartServer()
 }

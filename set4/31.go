@@ -65,9 +65,10 @@ type timedResponse struct {
 	elapsed int64
 }
 
-// Start the validation server at /test
+// Start the validation server for challenge 31 and 32
 func StartServer() {
 	http.HandleFunc("/test", ValidationServer)
+	http.HandleFunc("/test32", FasterValidationServer)
 	go http.ListenAndServe(LISTEN_ADDR, nil)
 }
 
