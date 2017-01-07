@@ -1,6 +1,12 @@
 package set_four
 
-import "testing"
+import (
+	"testing"
+)
+
+func init() {
+	StartServer(":8771")
+}
 
 func TestSHA256HMAC(t *testing.T) {
 	key := []byte("YELLOW SUBMARINE")

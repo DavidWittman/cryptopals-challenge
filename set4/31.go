@@ -45,8 +45,28 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"net/http"
 	"time"
 )
+
+func StartServer(addr string) {
+	http.HandleFunc("/test", ValidationServer)
+	go http.ListenAndServe(addr, nil)
+}
+
+func ValidationServer(w http.ResponseWriter, req *http.Request) {
+	status := 500
+
+	if ValidateHMAC() {
+		status = 200
+	}
+
+	http.Error(w, http.StatusText(status), status)
+}
+
+func ValidateHMAC() bool {
+	return true
+}
 
 func SHA256HMAC(key, message []byte) string {
 	mac := hmac.New(sha256.New, key)
