@@ -47,25 +47,38 @@ import (
 	"encoding/hex"
 	"net/http"
 	"time"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
+// Sleep for this many milliseconds while comparing the signature
+const COMPARE_DELAY = 50
+
+// The HTTP server will listen on this address:port
+const LISTEN_ADDR = ":8771"
+
+// Start the validation server at /test
 func StartServer(addr string) {
 	http.HandleFunc("/test", ValidationServer)
-	go http.ListenAndServe(addr, nil)
+	go http.ListenAndServe(LISTEN_ADDR, nil)
 }
 
 func ValidationServer(w http.ResponseWriter, req *http.Request) {
 	status := 500
 
-	if ValidateHMAC() {
+	message := req.FormValue("file")
+	sig := req.FormValue("signature")
+
+	if InsecureValidateHMAC(message, sig) {
 		status = 200
 	}
 
 	http.Error(w, http.StatusText(status), status)
 }
 
-func ValidateHMAC() bool {
-	return true
+func InsecureValidateHMAC(message, signature string) bool {
+	goodSig := SHA256HMAC(cryptopals.RANDOM_KEY, []byte(message))
+	return InsecureCompare([]byte(signature), []byte(goodSig), COMPARE_DELAY)
 }
 
 func SHA256HMAC(key, message []byte) string {
