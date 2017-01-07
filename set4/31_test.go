@@ -50,6 +50,7 @@ func TestFindSlowestRequest(t *testing.T) {
 
 func TestExploitTimingAttack(t *testing.T) {
 	result := ExploitTimingAttack("http://localhost:8771/test?file=foo&signature=", 64)
-	// TODO(dw): Check that the response is 200
-	t.Log(result)
+	if result == "" {
+		t.Errorf("No result received from timing attack")
+	}
 }

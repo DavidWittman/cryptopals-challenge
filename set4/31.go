@@ -45,7 +45,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -54,10 +53,17 @@ import (
 )
 
 // Sleep for this many milliseconds while comparing the signature
-const COMPARE_DELAY = 50
+// The challenge suggests 50ms, but that makes our tests really slow
+const COMPARE_DELAY = 20
 
 // The HTTP server will listen on this address:port
 const LISTEN_ADDR = ":8771"
+
+type timedResponse struct {
+	r       *http.Response
+	id      string
+	elapsed int64
+}
 
 // Start the validation server at /test
 func StartServer() {
@@ -131,7 +137,10 @@ func findSlowestRequest(requests map[string]int64) string {
 // Returns an empty string if no result is found
 func ExploitTimingAttack(url string, length int) string {
 	var known string
-	chars := "012345678abcdef"
+	results := make(chan timedResponse)
+
+	// These are the characters we're brute-forcing
+	chars := "0123456789abcdef"
 
 	for i := 0; i < length; i++ {
 		requests := make(map[string]int64)
@@ -141,13 +150,17 @@ func ExploitTimingAttack(url string, length int) string {
 		for j := 0; j < len(chars); j++ {
 			signature := strings.Join([]string{known, string(chars[j]), filler}, "")
 			urlWithSig := strings.Join([]string{url, signature}, "")
+			go TimeHTTPRequest(urlWithSig, string(chars[j]), results)
+		}
 
-			fmt.Println(signature)
-			elapsed, resp := TimeHTTPRequest(urlWithSig)
-			if resp.StatusCode == http.StatusOK {
-				return strings.Join([]string{known, string(chars[j])}, "")
+		// Collect results
+		for j := 0; j < len(chars); j++ {
+			res := <-results
+			// Return the result if the server returns a 200
+			if res.r.StatusCode == http.StatusOK {
+				return strings.Join([]string{known, res.id}, "")
 			}
-			requests[string(chars[j])] = elapsed
+			requests[res.id] = res.elapsed
 		}
 
 		bestGuess := findSlowestRequest(requests)
@@ -157,12 +170,16 @@ func ExploitTimingAttack(url string, length int) string {
 	return ""
 }
 
-func TimeHTTPRequest(url string) (int64, *http.Response) {
+// Times an HTTP request to `url` and passes a timedResponse
+// object to the results channel upon completion.
+// In this challenge, the `id` used to identify the request is just
+// the character we're attempting in this iteration.
+func TimeHTTPRequest(url, id string, results chan timedResponse) {
 	start := time.Now()
 	resp, err := http.Get(url)
 	if err != nil {
 		panic(err)
 	}
 	resp.Body.Close()
-	return time.Since(start).Nanoseconds(), resp
+	results <- timedResponse{resp, id, time.Since(start).Nanoseconds()}
 }
