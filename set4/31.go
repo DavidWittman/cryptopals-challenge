@@ -43,7 +43,7 @@ package set_four
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha1"
 	"encoding/hex"
 	"net/http"
 	"strings"
@@ -86,12 +86,12 @@ func ValidationServer(w http.ResponseWriter, req *http.Request) {
 }
 
 func InsecureValidateHMAC(message, signature string) bool {
-	goodSig := SHA256HMAC(cryptopals.RANDOM_KEY, []byte(message))
+	goodSig := HMACSHA1(cryptopals.RANDOM_KEY, []byte(message))
 	return InsecureCompare([]byte(signature), []byte(goodSig), COMPARE_DELAY)
 }
 
-func SHA256HMAC(key, message []byte) string {
-	mac := hmac.New(sha256.New, key)
+func HMACSHA1(key, message []byte) string {
+	mac := hmac.New(sha1.New, key)
 	mac.Write(message)
 	return hex.EncodeToString(mac.Sum(nil))
 }
@@ -181,6 +181,7 @@ func TimeHTTPRequest(url, id string, results chan timedResponse) {
 	if err != nil {
 		panic(err)
 	}
-	resp.Body.Close()
-	results <- timedResponse{resp, id, time.Since(start).Nanoseconds()}
+	defer resp.Body.Close()
+	elapsed := time.Since(start).Nanoseconds()
+	results <- timedResponse{resp, id, elapsed}
 }

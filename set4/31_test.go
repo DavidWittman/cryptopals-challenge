@@ -10,12 +10,12 @@ func init() {
 	StartServer()
 }
 
-func TestSHA256HMAC(t *testing.T) {
+func TestHMACSHA1(t *testing.T) {
 	key := []byte("YELLOW SUBMARINE")
 	message := []byte("this is just another message")
-	expected := "c6b7657868cc5bc8745121891eedb34e4ea44145ef78ba776f7775a41a64da32"
+	expected := "6a4ca4433193b39316dc1d6ffcf325fb14b9354d"
 
-	result := SHA256HMAC(key, message)
+	result := HMACSHA1(key, message)
 	if result != expected {
 		t.Errorf("Incorrect HMAC generated.\nExpected:\t%v\nGot:\t\t%v", expected, result)
 	}
@@ -51,7 +51,8 @@ func TestFindSlowestRequest(t *testing.T) {
 }
 
 func TestExploitTimingAttack(t *testing.T) {
-	result := ExploitTimingAttack("http://localhost:8771/test?file=foo&signature=", 64)
+	// SHA1 is 20 bytes (40 characters in hex)
+	result := ExploitTimingAttack("http://localhost:8771/test?file=foo&signature=", 40)
 	if result == "" {
 		t.Errorf("No result received from timing attack")
 	}
