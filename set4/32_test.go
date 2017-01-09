@@ -6,9 +6,11 @@ import "testing"
 // It's jank but I'm being lazy
 
 func TestExploitMoreDifficultTimingAttack(t *testing.T) {
-	// Skip this for now
+	// This works, but it takes forever, so skip it
 	t.Skip()
-	result := ExploitMoreDifficultTimingAttack("http://localhost:8771/test32?file=foo&signature=", 64)
+
+	// SHA1 = 20 bytes = 40 hex chars
+	result := ExploitMoreDifficultTimingAttack("http://localhost:8771/test32?file=foo&signature=", 40)
 	if result == "" {
 		t.Errorf("No result received from timing attack")
 	}
