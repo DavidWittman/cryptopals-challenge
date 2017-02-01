@@ -26,7 +26,7 @@ func TestHammingDistance(t *testing.T) {
 }
 
 func TestGuessKeySize(t *testing.T) {
-	file, err := os.Open("./data/6.txt")
+	file, err := os.Open("./testdata/6.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -44,5 +44,5 @@ func TestGuessKeySize(t *testing.T) {
 }
 
 func TestBreakRepeatingKeyXOR(t *testing.T) {
-	t.Log(string(BreakRepeatingKeyXOR("./data/6.txt")))
+	t.Log(string(BreakRepeatingKeyXOR("./testdata/6.txt")))
 }

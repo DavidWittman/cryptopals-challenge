@@ -5,7 +5,7 @@ import (
 )
 
 func TestFindXORedStringInFile(t *testing.T) {
-	result, _ := FindXORedStringInFile("data/4.txt")
+	result, _ := FindXORedStringInFile("testdata/4.txt")
 	if result == "" {
 		t.Fail()
 	}

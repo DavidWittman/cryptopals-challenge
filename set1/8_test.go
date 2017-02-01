@@ -5,7 +5,7 @@ import (
 )
 
 func TestFindECBLine(t *testing.T) {
-	ecbLine := FindECBLine("./data/8.txt")
+	ecbLine := FindECBLine("./testdata/8.txt")
 	if ecbLine == "" {
 		t.Fatalf("Unable to detect ECB encrypted cipher")
 	}

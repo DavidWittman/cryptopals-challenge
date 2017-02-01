@@ -8,7 +8,7 @@ import (
 )
 
 func TestSplitDecodeAndEncrypt(t *testing.T) {
-	results, err := splitDecodeAndEncrypt("./data/19.txt")
+	results, err := splitDecodeAndEncrypt("./testdata/19.txt")
 
 	if err != nil {
 		t.Errorf("Error splitting bytes: %s", err)
@@ -20,7 +20,7 @@ func TestSplitDecodeAndEncrypt(t *testing.T) {
 }
 
 func TestGuessFixedNonceCTRKeystream(t *testing.T) {
-	ciphers, err := splitDecodeAndEncrypt("./data/19.txt")
+	ciphers, err := splitDecodeAndEncrypt("./testdata/19.txt")
 	if err != nil {
 		t.Errorf("Error preparing input for BreakFixedNonceCTR: %s", err)
 	}

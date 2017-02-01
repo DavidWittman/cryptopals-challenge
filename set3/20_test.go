@@ -7,7 +7,7 @@ import (
 )
 
 func TestGuessFixedNonceCTRKeystreamChallenge20(t *testing.T) {
-	ciphers, err := splitDecodeAndEncrypt("./data/20.txt")
+	ciphers, err := splitDecodeAndEncrypt("./testdata/20.txt")
 	if err != nil {
 		t.Errorf("Error preparing input for BreakFixedNonceCTR: %s", err)
 	}

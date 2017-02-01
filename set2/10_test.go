@@ -7,7 +7,7 @@ import (
 func Test10(t *testing.T) {
 	key := []byte("YELLOW SUBMARINE")
 	iv := make([]byte, len(key))
-	result, err := DecryptFileCBC("./data/10.txt", key, iv)
+	result, err := DecryptFileCBC("./testdata/10.txt", key, iv)
 	if err != nil {
 		t.Errorf("Error decrypting: %s", err)
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 func TestEncryptFileCTR(t *testing.T) {
-	cipher, err := encryptFileCTR("./data/25_plain.txt", cryptopals.RANDOM_KEY, 0)
+	cipher, err := encryptFileCTR("./testdata/25_plain.txt", cryptopals.RANDOM_KEY, 0)
 	if err != nil {
 		t.Errorf("Error encrypting file: %s", err)
 	}
@@ -25,7 +25,7 @@ func TestEdit(t *testing.T) {
 	// This is the string we're injecting
 	spaghetti := []byte("Mom's Spaghetti,")
 
-	cipher, err := encryptFileCTR("./data/25_plain.txt", cryptopals.RANDOM_KEY, 0)
+	cipher, err := encryptFileCTR("./testdata/25_plain.txt", cryptopals.RANDOM_KEY, 0)
 	if err != nil {
 		t.Errorf("Error encrypting file: %s", err)
 	}
@@ -52,7 +52,7 @@ func TestEdit(t *testing.T) {
 }
 
 func TestRecoverPlaintext(t *testing.T) {
-	cipher, err := encryptFileCTR("./data/25_plain.txt", cryptopals.RANDOM_KEY, 0)
+	cipher, err := encryptFileCTR("./testdata/25_plain.txt", cryptopals.RANDOM_KEY, 0)
 	if err != nil {
 		t.Errorf("Error encrypting file: %s", err)
 	}
