@@ -45,3 +45,41 @@
  */
 
 package set_five
+
+import (
+	"crypto/sha256"
+	"math/big"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
+)
+
+// I poorly chose a maximum integer for generating the random keys
+const DH_MAX_RANDOM = 1048576
+
+type DHClient struct {
+	P          *big.Int
+	G          *big.Int
+	PublicKey  *big.Int
+	privateKey *big.Int
+	sessionKey [sha256.Size]byte
+}
+
+func NewDHClient(p, g *big.Int) *DHClient {
+	c := &DHClient{P: p, G: g}
+	c.generateKeys()
+	return c
+}
+
+func (d *DHClient) GenerateSessionKey(publicKey *big.Int) {
+	// s = (B ** a) % p
+	bigSessionKey := new(big.Int).Exp(publicKey, d.privateKey, d.P)
+	d.sessionKey = sha256.Sum256(bigSessionKey.Bytes())
+}
+
+func (d *DHClient) generateKeys() {
+	random := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
+	// a = RANDOM % p
+	d.privateKey = new(big.Int).Mod(random, d.P)
+	// A = (g**a) % p
+	d.PublicKey = new(big.Int).Exp(d.G, d.privateKey, d.P)
+}
