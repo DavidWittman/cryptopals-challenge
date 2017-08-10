@@ -49,3 +49,125 @@
  */
 
 package set_five
+
+import (
+	"bytes"
+	"crypto/sha1"
+	"encoding/binary"
+	"encoding/gob"
+	"fmt"
+	"io"
+	"math/big"
+	"net"
+)
+
+type DHExchange struct {
+	Group     *DHGroup
+	PublicKey *big.Int
+}
+
+// StartServer creates a TCP listener for a Diffie Hellman Exchange
+//
+// `listen` is the ip:port or :port to listen on
+func StartServer(listen string) {
+	socket, err := net.Listen("tcp", listen)
+	if err != nil {
+		panic(err)
+	}
+	defer socket.Close()
+
+	for {
+		conn, err := socket.Accept()
+		if err != nil {
+			fmt.Println("Error establishing connection:", err)
+			continue
+		}
+
+		var exchange DHExchange
+		msgReader := bytes.NewReader(read(conn))
+		decoder := gob.NewDecoder(msgReader)
+
+		err = decoder.Decode(&exchange)
+		if err != nil {
+			panic(err)
+		}
+
+		client := NewDHClient(exchange.Group.P, exchange.Group.G)
+		client.GenerateSessionKey(exchange.PublicKey)
+		fmt.Println("Session key:", sha1.Sum(client.sessionKey[:]))
+
+		exchange.PublicKey = client.PublicKey
+		b, err := encode(exchange)
+		if err != nil {
+			panic(err)
+		}
+		send(conn, b)
+	}
+}
+
+func encode(data interface{}) ([]byte, error) {
+	var b bytes.Buffer
+	encoder := gob.NewEncoder(&b)
+	if err := encoder.Encode(data); err != nil {
+		return []byte{}, err
+	}
+	return b.Bytes(), nil
+}
+
+func read(conn net.Conn) []byte {
+	var length uint16
+
+	err := binary.Read(conn, binary.LittleEndian, &length)
+	if err != nil {
+		panic(err)
+	}
+
+	msg := make([]byte, length)
+	_, err = io.ReadFull(conn, msg)
+	if err != nil {
+		panic(err)
+	}
+
+	return msg
+}
+
+func Client(connect string) error {
+	p, g := big.NewInt(37), big.NewInt(5)
+	client := NewDHClient(p, g)
+	exchange := DHExchange{client.Group, client.PublicKey}
+
+	b, err := encode(exchange)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.Dial("tcp", connect)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	send(conn, b)
+
+	var server DHExchange
+	msgReader := bytes.NewReader(read(conn))
+	decoder := gob.NewDecoder(msgReader)
+	err = decoder.Decode(&server)
+	if err != nil {
+		panic(err)
+	}
+
+	client.GenerateSessionKey(server.PublicKey)
+	fmt.Println("Session key:", sha1.Sum(client.sessionKey[:]))
+	return nil
+}
+
+func send(conn net.Conn, b []byte) {
+	var length bytes.Buffer
+	err := binary.Write(&length, binary.LittleEndian, uint16(len(b)))
+	if err != nil {
+		panic(err)
+	}
+	conn.Write(length.Bytes())
+	conn.Write(b)
+}
