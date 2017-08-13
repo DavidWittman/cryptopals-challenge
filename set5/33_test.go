@@ -8,8 +8,8 @@ import (
 func TestDHSession(t *testing.T) {
 	p, g := big.NewInt(37), big.NewInt(5)
 
-	alice := NewDHClient(p, g)
-	bob := NewDHClient(p, g)
+	alice := NewDHSession(p, g)
+	bob := NewDHSession(p, g)
 
 	alice.GenerateSessionKey(bob.PublicKey)
 	bob.GenerateSessionKey(alice.PublicKey)
@@ -25,8 +25,8 @@ func TestDHSession3000(t *testing.T) {
 	p, g := big.NewInt(37), big.NewInt(5)
 
 	for i := 0; i < 3000; i++ {
-		alice := NewDHClient(p, g)
-		bob := NewDHClient(p, g)
+		alice := NewDHSession(p, g)
+		bob := NewDHSession(p, g)
 
 		alice.GenerateSessionKey(bob.PublicKey)
 		bob.GenerateSessionKey(alice.PublicKey)
@@ -44,8 +44,8 @@ func TestDHSessionNIST(t *testing.T) {
 		t.Errorf("Error setting p")
 	}
 
-	alice := NewDHClient(p, g)
-	bob := NewDHClient(p, g)
+	alice := NewDHSession(p, g)
+	bob := NewDHSession(p, g)
 
 	alice.GenerateSessionKey(bob.PublicKey)
 	bob.GenerateSessionKey(alice.PublicKey)

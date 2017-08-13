@@ -56,30 +56,34 @@ import (
 // I poorly chose a maximum integer for generating the random keys
 const DH_MAX_RANDOM = 1048576
 
-type DHClient struct {
-	P          *big.Int
-	G          *big.Int
+type DHGroup struct {
+	P *big.Int
+	G *big.Int
+}
+
+type DHSession struct {
+	Group      *DHGroup
 	PublicKey  *big.Int
 	privateKey *big.Int
 	sessionKey [sha256.Size]byte
 }
 
-func NewDHClient(p, g *big.Int) *DHClient {
-	c := &DHClient{P: p, G: g}
+func NewDHSession(p, g *big.Int) *DHSession {
+	c := &DHSession{Group: &DHGroup{p, g}}
 	c.generateKeys()
 	return c
 }
 
-func (d *DHClient) GenerateSessionKey(publicKey *big.Int) {
+func (d *DHSession) GenerateSessionKey(publicKey *big.Int) {
 	// s = (B ** a) % p
-	bigSessionKey := new(big.Int).Exp(publicKey, d.privateKey, d.P)
+	bigSessionKey := new(big.Int).Exp(publicKey, d.privateKey, d.Group.P)
 	d.sessionKey = sha256.Sum256(bigSessionKey.Bytes())
 }
 
-func (d *DHClient) generateKeys() {
+func (d *DHSession) generateKeys() {
 	random := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
 	// a = RANDOM % p
-	d.privateKey = new(big.Int).Mod(random, d.P)
+	d.privateKey = new(big.Int).Mod(random, d.Group.P)
 	// A = (g**a) % p
-	d.PublicKey = new(big.Int).Exp(d.G, d.privateKey, d.P)
+	d.PublicKey = new(big.Int).Exp(d.Group.G, d.privateKey, d.Group.P)
 }

@@ -55,15 +55,73 @@ import (
 	"crypto/sha1"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 	"io"
+	"log"
 	"math/big"
 	"net"
+)
+
+const (
+	DHE_MSG_EXCHANGE = 0x1
+	DHE_MSG_STRING   = 0x2
 )
 
 type DHExchange struct {
 	Group     *DHGroup
 	PublicKey *big.Int
+}
+
+type DHClient struct {
+	conn    net.Conn
+	session *DHSession
+}
+
+func (n *DHClient) read() []byte {
+	var length uint16
+
+	err := binary.Read(n.conn, binary.LittleEndian, &length)
+	if err != nil {
+		panic(err)
+	}
+
+	msg := make([]byte, length)
+	_, err = io.ReadFull(n.conn, msg)
+	if err != nil {
+		panic(err)
+	}
+
+	return msg
+}
+
+func (n *DHClient) ReadMessage(kind byte) interface{} {
+	msgReader := bytes.NewReader(n.read())
+	decoder := gob.NewDecoder(msgReader)
+	switch kind {
+	case DHE_MSG_EXCHANGE:
+		var decoded DHExchange
+		err := decoder.Decode(&decoded)
+		if err != nil {
+			panic(err)
+		}
+		return decoded
+	default:
+		var decoded string
+		err := decoder.Decode(&decoded)
+		if err != nil {
+			panic(err)
+		}
+		return decoded
+	}
+}
+
+func (n *DHClient) Send(b []byte) {
+	var length bytes.Buffer
+	err := binary.Write(&length, binary.LittleEndian, uint16(len(b)))
+	if err != nil {
+		panic(err)
+	}
+	n.conn.Write(length.Bytes())
+	n.conn.Write(b)
 }
 
 // StartServer creates a TCP listener for a Diffie Hellman Exchange
@@ -79,29 +137,25 @@ func StartServer(listen string) {
 	for {
 		conn, err := socket.Accept()
 		if err != nil {
-			fmt.Println("Error establishing connection:", err)
+			log.Println("Error establishing connection:", err)
 			continue
 		}
 
-		var exchange DHExchange
-		msgReader := bytes.NewReader(read(conn))
-		decoder := gob.NewDecoder(msgReader)
+		server := &DHClient{conn, nil}
+		exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
+		e := exchange.(DHExchange)
 
-		err = decoder.Decode(&exchange)
+		// Server = Bob, Client = Alice
+		bob := NewDHSession(e.Group.P, e.Group.G)
+		bob.GenerateSessionKey(e.PublicKey)
+		log.Println("Session key:", sha1.Sum(bob.sessionKey[:]))
+
+		e.PublicKey = bob.PublicKey
+		b, err := encode(e)
 		if err != nil {
 			panic(err)
 		}
-
-		client := NewDHClient(exchange.Group.P, exchange.Group.G)
-		client.GenerateSessionKey(exchange.PublicKey)
-		fmt.Println("Session key:", sha1.Sum(client.sessionKey[:]))
-
-		exchange.PublicKey = client.PublicKey
-		b, err := encode(exchange)
-		if err != nil {
-			panic(err)
-		}
-		send(conn, b)
+		server.Send(b)
 	}
 }
 
@@ -114,27 +168,10 @@ func encode(data interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func read(conn net.Conn) []byte {
-	var length uint16
-
-	err := binary.Read(conn, binary.LittleEndian, &length)
-	if err != nil {
-		panic(err)
-	}
-
-	msg := make([]byte, length)
-	_, err = io.ReadFull(conn, msg)
-	if err != nil {
-		panic(err)
-	}
-
-	return msg
-}
-
 func Client(connect string) error {
 	p, g := big.NewInt(37), big.NewInt(5)
-	client := NewDHClient(p, g)
-	exchange := DHExchange{client.Group, client.PublicKey}
+	alice := NewDHSession(p, g)
+	exchange := DHExchange{alice.Group, alice.PublicKey}
 
 	b, err := encode(exchange)
 	if err != nil {
@@ -147,27 +184,13 @@ func Client(connect string) error {
 	}
 	defer conn.Close()
 
-	send(conn, b)
+	client := &DHClient{conn, alice}
+	client.Send(b)
 
-	var server DHExchange
-	msgReader := bytes.NewReader(read(conn))
-	decoder := gob.NewDecoder(msgReader)
-	err = decoder.Decode(&server)
-	if err != nil {
-		panic(err)
-	}
+	server := client.ReadMessage(DHE_MSG_EXCHANGE)
+	bob := server.(DHExchange)
 
-	client.GenerateSessionKey(server.PublicKey)
-	fmt.Println("Session key:", sha1.Sum(client.sessionKey[:]))
+	client.session.GenerateSessionKey(bob.PublicKey)
+	log.Println("Session key:", sha1.Sum(client.session.sessionKey[:]))
 	return nil
-}
-
-func send(conn net.Conn, b []byte) {
-	var length bytes.Buffer
-	err := binary.Write(&length, binary.LittleEndian, uint16(len(b)))
-	if err != nil {
-		panic(err)
-	}
-	conn.Write(length.Bytes())
-	conn.Write(b)
 }
