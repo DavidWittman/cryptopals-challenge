@@ -5,7 +5,7 @@ import (
 )
 
 func TestDHExchange(t *testing.T) {
-	listen := ":3000"
+	listen := "localhost:3000"
 	go StartServer(listen)
-	_ = Client("localhost" + listen)
+	_ = Client(listen)
 }
