@@ -44,7 +44,7 @@
  * Note that you don't actually have to inject bogus parameters to make this
  * attack work; you could just generate Ma, MA, Mb, and MB as valid DH
  * parameters to do a generic MITM attack. But do the parameter injection
- * attack; it's going to come up agaic.
+ * attack; it's going to come up again.
  *
  */
 
@@ -76,6 +76,7 @@ type DHExchange struct {
 }
 
 type DHClient struct {
+	Name    string
 	conn    net.Conn
 	session *DHSession
 }
@@ -120,7 +121,18 @@ func (c *DHClient) ReadMessage(kind byte) interface{} {
 	}
 }
 
+func (c *DHClient) ReadEncryptedMessage() ([]byte, error) {
+	key := c.session.sha1SessionKey[:KEYSIZE]
+	m := c.ReadMessage(DHE_MSG_BYTES)
+	blob := m.([]byte)
+	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
+	message, err := cryptopals.DecryptAESCBC(cipher, key, iv)
+	log.Println(c.Name, "received message:", string(message))
+	return message, err
+}
+
 func (c *DHClient) SendEncrypted(b []byte) error {
+	log.Println(c.Name, "is sending an encrypted message")
 	key := c.session.sha1SessionKey[:KEYSIZE]
 	iv, _ := cryptopals.GenerateRandomBytes(KEYSIZE)
 	cipher, err := cryptopals.EncryptAESCBC(b, key, iv)
@@ -162,7 +174,7 @@ func StartServer(listen string) {
 			continue
 		}
 
-		server := &DHClient{conn, nil}
+		server := &DHClient{"Bob", conn, nil}
 		exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
 		e := exchange.(DHExchange)
 
@@ -183,17 +195,12 @@ func StartServer(listen string) {
 		if err != nil {
 			panic(err)
 		}
-		log.Println("Bob received message:", string(message))
-	}
-}
 
-func (c *DHClient) ReadEncryptedMessage() ([]byte, error) {
-	key := c.session.sha1SessionKey[:KEYSIZE]
-	m := c.ReadMessage(DHE_MSG_BYTES)
-	blob := m.([]byte)
-	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
-	message, err := cryptopals.DecryptAESCBC(cipher, key, iv)
-	return message, err
+		err = server.SendEncrypted(message)
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func encode(data interface{}) ([]byte, error) {
@@ -221,7 +228,7 @@ func Client(connect string) error {
 	}
 	defer conn.Close()
 
-	client := &DHClient{conn, alice}
+	client := &DHClient{"Alice", conn, alice}
 	client.Send(b)
 
 	server := client.ReadMessage(DHE_MSG_EXCHANGE)
@@ -230,12 +237,15 @@ func Client(connect string) error {
 	alice.GenerateSessionKeys(bob.PublicKey)
 
 	// Now that we have the session key, send the secret message to Bob
-	log.Println("Alice is sending an encrypted message")
 	err = client.SendEncrypted([]byte(SECRET_MESSAGE))
 	if err != nil {
 		return err
 	}
-	_ = client.ReadMessage(DHE_MSG_BYTES)
+
+	_, err = client.ReadEncryptedMessage()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
