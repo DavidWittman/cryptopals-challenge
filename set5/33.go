@@ -47,6 +47,7 @@
 package set_five
 
 import (
+	"crypto/sha1"
 	"crypto/sha256"
 	"math/big"
 
@@ -62,10 +63,11 @@ type DHGroup struct {
 }
 
 type DHSession struct {
-	Group      *DHGroup
-	PublicKey  *big.Int
-	privateKey *big.Int
-	sessionKey [sha256.Size]byte
+	Group          *DHGroup
+	PublicKey      *big.Int
+	privateKey     *big.Int
+	sessionKey     [sha256.Size]byte
+	sha1SessionKey [sha1.Size]byte
 }
 
 func NewDHSession(p, g *big.Int) *DHSession {
@@ -74,10 +76,11 @@ func NewDHSession(p, g *big.Int) *DHSession {
 	return c
 }
 
-func (d *DHSession) GenerateSessionKey(publicKey *big.Int) {
+func (d *DHSession) GenerateSessionKeys(publicKey *big.Int) {
 	// s = (B ** a) % p
 	bigSessionKey := new(big.Int).Exp(publicKey, d.privateKey, d.Group.P)
 	d.sessionKey = sha256.Sum256(bigSessionKey.Bytes())
+	d.sha1SessionKey = sha1.Sum(bigSessionKey.Bytes())
 }
 
 func (d *DHSession) generateKeys() {

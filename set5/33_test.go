@@ -11,8 +11,8 @@ func TestDHSession(t *testing.T) {
 	alice := NewDHSession(p, g)
 	bob := NewDHSession(p, g)
 
-	alice.GenerateSessionKey(bob.PublicKey)
-	bob.GenerateSessionKey(alice.PublicKey)
+	alice.GenerateSessionKeys(bob.PublicKey)
+	bob.GenerateSessionKeys(alice.PublicKey)
 
 	if alice.sessionKey != bob.sessionKey {
 		t.Errorf("Session keys do not match!\n\n%v\n%v", alice, bob)
@@ -28,8 +28,8 @@ func TestDHSession3000(t *testing.T) {
 		alice := NewDHSession(p, g)
 		bob := NewDHSession(p, g)
 
-		alice.GenerateSessionKey(bob.PublicKey)
-		bob.GenerateSessionKey(alice.PublicKey)
+		alice.GenerateSessionKeys(bob.PublicKey)
+		bob.GenerateSessionKeys(alice.PublicKey)
 
 		if alice.sessionKey != bob.sessionKey {
 			t.Errorf("Session keys do not match!\n\n%v\n%v", alice, bob)
@@ -47,8 +47,8 @@ func TestDHSessionNIST(t *testing.T) {
 	alice := NewDHSession(p, g)
 	bob := NewDHSession(p, g)
 
-	alice.GenerateSessionKey(bob.PublicKey)
-	bob.GenerateSessionKey(alice.PublicKey)
+	alice.GenerateSessionKeys(bob.PublicKey)
+	bob.GenerateSessionKeys(alice.PublicKey)
 
 	if alice.sessionKey != bob.sessionKey {
 		t.Errorf("Session keys do not match!\n\n%v\n%v", alice, bob)

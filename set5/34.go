@@ -44,26 +44,30 @@
  * Note that you don't actually have to inject bogus parameters to make this
  * attack work; you could just generate Ma, MA, Mb, and MB as valid DH
  * parameters to do a generic MITM attack. But do the parameter injection
- * attack; it's going to come up again.
+ * attack; it's going to come up agaic.
  *
  */
 
+// TODO(dw): Move `encode` to `Send`
 package set_five
 
 import (
 	"bytes"
-	"crypto/sha1"
 	"encoding/binary"
 	"encoding/gob"
 	"io"
 	"log"
 	"math/big"
 	"net"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 const (
 	DHE_MSG_EXCHANGE = 0x1
-	DHE_MSG_STRING   = 0x2
+	DHE_MSG_BYTES    = 0x2
+	KEYSIZE          = 16
+	SECRET_MESSAGE   = "Go Ninja, Go Ninja, GO: Go Ninja, Go Ninja, GO!"
 )
 
 type DHExchange struct {
@@ -76,16 +80,16 @@ type DHClient struct {
 	session *DHSession
 }
 
-func (n *DHClient) read() []byte {
+func (c *DHClient) read() []byte {
 	var length uint16
 
-	err := binary.Read(n.conn, binary.LittleEndian, &length)
+	err := binary.Read(c.conn, binary.LittleEndian, &length)
 	if err != nil {
 		panic(err)
 	}
 
 	msg := make([]byte, length)
-	_, err = io.ReadFull(n.conn, msg)
+	_, err = io.ReadFull(c.conn, msg)
 	if err != nil {
 		panic(err)
 	}
@@ -93,8 +97,10 @@ func (n *DHClient) read() []byte {
 	return msg
 }
 
-func (n *DHClient) ReadMessage(kind byte) interface{} {
-	msgReader := bytes.NewReader(n.read())
+// TODO(dw): Just replace this with a Handshake method and a method for
+// receiving encrypted messages
+func (c *DHClient) ReadMessage(kind byte) interface{} {
+	msgReader := bytes.NewReader(c.read())
 	decoder := gob.NewDecoder(msgReader)
 	switch kind {
 	case DHE_MSG_EXCHANGE:
@@ -105,7 +111,7 @@ func (n *DHClient) ReadMessage(kind byte) interface{} {
 		}
 		return decoded
 	default:
-		var decoded string
+		var decoded []byte
 		err := decoder.Decode(&decoded)
 		if err != nil {
 			panic(err)
@@ -114,14 +120,29 @@ func (n *DHClient) ReadMessage(kind byte) interface{} {
 	}
 }
 
-func (n *DHClient) Send(b []byte) {
+func (c *DHClient) SendEncrypted(b []byte) error {
+	key := c.session.sha1SessionKey[:KEYSIZE]
+	iv, _ := cryptopals.GenerateRandomBytes(KEYSIZE)
+	cipher, err := cryptopals.EncryptAESCBC(b, key, iv)
+	if err != nil {
+		return err
+	}
+	encoded, err := encode(append(cipher, iv...))
+	if err != nil {
+		return err
+	}
+	c.Send(encoded)
+	return nil
+}
+
+func (c *DHClient) Send(b []byte) {
 	var length bytes.Buffer
 	err := binary.Write(&length, binary.LittleEndian, uint16(len(b)))
 	if err != nil {
 		panic(err)
 	}
-	n.conn.Write(length.Bytes())
-	n.conn.Write(b)
+	c.conn.Write(length.Bytes())
+	c.conn.Write(b)
 }
 
 // StartServer creates a TCP listener for a Diffie Hellman Exchange
@@ -146,17 +167,33 @@ func StartServer(listen string) {
 		e := exchange.(DHExchange)
 
 		// Server = Bob, Client = Alice
-		bob := NewDHSession(e.Group.P, e.Group.G)
-		bob.GenerateSessionKey(e.PublicKey)
-		log.Println("Session key:", sha1.Sum(bob.sessionKey[:]))
+		server.session = NewDHSession(e.Group.P, e.Group.G)
+		server.session.GenerateSessionKeys(e.PublicKey)
 
-		e.PublicKey = bob.PublicKey
+		// Send over our public key in an exchange object so Alice can generate s
+		e.PublicKey = server.session.PublicKey
 		b, err := encode(e)
 		if err != nil {
 			panic(err)
 		}
 		server.Send(b)
+
+		// Now we're expecting Alice to send an encrypted message
+		message, err := server.ReadEncryptedMessage()
+		if err != nil {
+			panic(err)
+		}
+		log.Println("Bob received message:", string(message))
 	}
+}
+
+func (c *DHClient) ReadEncryptedMessage() ([]byte, error) {
+	key := c.session.sha1SessionKey[:KEYSIZE]
+	m := c.ReadMessage(DHE_MSG_BYTES)
+	blob := m.([]byte)
+	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
+	message, err := cryptopals.DecryptAESCBC(cipher, key, iv)
+	return message, err
 }
 
 func encode(data interface{}) ([]byte, error) {
@@ -190,7 +227,15 @@ func Client(connect string) error {
 	server := client.ReadMessage(DHE_MSG_EXCHANGE)
 	bob := server.(DHExchange)
 
-	client.session.GenerateSessionKey(bob.PublicKey)
-	log.Println("Session key:", sha1.Sum(client.session.sessionKey[:]))
+	alice.GenerateSessionKeys(bob.PublicKey)
+
+	// Now that we have the session key, send the secret message to Bob
+	log.Println("Alice is sending an encrypted message")
+	err = client.SendEncrypted([]byte(SECRET_MESSAGE))
+	if err != nil {
+		return err
+	}
+	_ = client.ReadMessage(DHE_MSG_BYTES)
+
 	return nil
 }
