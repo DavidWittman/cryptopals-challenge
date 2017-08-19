@@ -109,6 +109,85 @@ func StartServer(listen string) {
 	}
 }
 
+// StartMITMServer creates a TCP listener for a Diffie Hellman Exchange and
+// acts as a proxy between two clients to simulate a man-in-the-middle.
+//
+// `listen` is the ip:port or :port to listen on
+// `dest` is the ip:port of the
+func StartMITMServer(listen, dest string) {
+	socket, err := net.Listen("tcp", listen)
+	if err != nil {
+		panic(err)
+	}
+	defer socket.Close()
+
+	for {
+		conn, err := socket.Accept()
+		if err != nil {
+			log.Println("Error establishing connection:", err)
+			continue
+		}
+
+		server := &DHClient{"Eve", conn, nil}
+		exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
+		e := exchange.(DHExchange)
+
+		server.session = NewDHSession(e.Group.P, e.Group.G)
+		// Use p for generating Eve's session keys so that we generate the same
+		// session key between the two sessions
+		server.session.GenerateSessionKeys(e.Group.P)
+
+		// Use P for the public key to make the session key predictable
+		e.PublicKey = e.Group.P
+
+		// Encode/send exchange object with fixed key to Alice
+		b, err := encode(e)
+		if err != nil {
+			panic(err)
+		}
+		server.Send(b)
+
+		// Establish fixed-key MITM connection to Bob
+		clientConn, err := net.Dial("tcp", dest)
+		if err != nil {
+			panic(err)
+		}
+		defer clientConn.Close()
+
+		clientSession := NewDHSession(e.Group.P, e.Group.G)
+		// NOTE(dw): This doesn't seem right -- might break here
+		clientSession.PublicKey = e.Group.P
+		client := &DHClient{"EveClient", clientConn, clientSession}
+		client.Send(b)
+
+		// We don't actually need Bob's public key because our fixed-key attack has
+		// made the session key preditable.
+		_ = client.ReadMessage(DHE_MSG_EXCHANGE)
+		clientSession.GenerateSessionKeys(e.Group.P)
+
+		// Now we're expecting Alice to send an encrypted message
+		message, err := server.ReadEncrypted()
+		if err != nil {
+			panic(err)
+		}
+
+		err = client.SendEncrypted(message)
+		if err != nil {
+			panic(err)
+		}
+
+		message, err = client.ReadEncrypted()
+		if err != nil {
+			panic(err)
+		}
+
+		err = server.SendEncrypted(message)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func encode(data interface{}) ([]byte, error) {
 	var b bytes.Buffer
 	encoder := gob.NewEncoder(&b)
@@ -120,8 +199,8 @@ func encode(data interface{}) ([]byte, error) {
 
 func Client(connect string) error {
 	p, g := big.NewInt(37), big.NewInt(5)
-	alice := NewDHSession(p, g)
-	exchange := DHExchange{alice.Group, alice.PublicKey}
+	sess := NewDHSession(p, g)
+	exchange := DHExchange{sess.Group, sess.PublicKey}
 
 	b, err := encode(exchange)
 	if err != nil {
@@ -134,13 +213,13 @@ func Client(connect string) error {
 	}
 	defer conn.Close()
 
-	client := &DHClient{"Alice", conn, alice}
+	client := &DHClient{"Alice", conn, sess}
 	client.Send(b)
 
 	server := client.ReadMessage(DHE_MSG_EXCHANGE)
 	bob := server.(DHExchange)
 
-	alice.GenerateSessionKeys(bob.PublicKey)
+	sess.GenerateSessionKeys(bob.PublicKey)
 
 	// Now that we have the session key, send the secret message to Bob
 	err = client.SendEncrypted([]byte(SECRET_MESSAGE))
