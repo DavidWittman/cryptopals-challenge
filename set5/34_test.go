@@ -19,5 +19,7 @@ func TestDHMITM(t *testing.T) {
 	go StartMITMServer(eveAddr, bobAddr)
 	go StartServer(bobAddr)
 
-	_ = Client(eveAddr)
+	if err := Client(eveAddr); err != nil {
+		t.Error(err)
+	}
 }

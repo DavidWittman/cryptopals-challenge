@@ -74,9 +74,15 @@ func (c *DHClient) ReadEncrypted() ([]byte, error) {
 	m := c.ReadMessage(DHE_MSG_BYTES)
 	blob := m.([]byte)
 	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
+
 	message, err := cryptopals.DecryptAESCBC(cipher, key, iv)
-	log.Println(c.Name, "received message:", string(message))
-	return message, err
+	if err != nil {
+		return []byte{}, err
+	}
+
+	unpadded := cryptopals.MaybePKCS7Unpad(message)
+	log.Println(c.Name, "received message:", string(unpadded))
+	return unpadded, nil
 }
 
 func (c *DHClient) SendEncrypted(b []byte) error {
