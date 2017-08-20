@@ -13,7 +13,7 @@ func TestDHExchange(t *testing.T) {
 // Simulate a MITM by having Alice connect directly to Eve
 // Alice -> Eve (:3666) -> Bob (:3000)
 func TestDHMITM(t *testing.T) {
-	bobAddr := "localhost:3000"
+	bobAddr := "localhost:3333"
 	eveAddr := "localhost:3666"
 
 	go StartMITMServer(eveAddr, bobAddr)
