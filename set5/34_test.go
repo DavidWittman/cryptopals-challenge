@@ -19,6 +19,8 @@ func TestDHMITM(t *testing.T) {
 	go StartMITMServer(eveAddr, bobAddr)
 	go StartServer(bobAddr)
 
+	// TODO(dw): This fails some of the time when the Client starts up
+	// before the servers come online
 	if err := Client(eveAddr); err != nil {
 		t.Error(err)
 	}
