@@ -48,6 +48,18 @@
  *
  */
 
+/* NOTES:
+ *  - This fixed-key attack works by setting the public keys for the session
+ *    to the same value as `p`. This makes the session key calculated as
+ *    follows:
+ *
+ *        s = (p ^ k) % p
+ *
+ *    And p ^ k always produces a multiple of p (with the exception of when the
+ *    private key is 0, because p^0 == 1), meaning the session key can be
+ *    easily predicted.
+ */
+
 // TODO(dw): Move `encode` to `Send`
 package set_five
 
@@ -55,7 +67,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"log"
-	"math/big"
 	"net"
 )
 
@@ -155,7 +166,6 @@ func StartMITMServer(listen, dest string) {
 		defer clientConn.Close()
 
 		clientSession := NewDHSession(e.Group.P, e.Group.G)
-		// NOTE(dw): This doesn't seem right -- might break here
 		clientSession.PublicKey = e.Group.P
 		client := &DHClient{"EveClient", clientConn, clientSession}
 		client.Send(b)
@@ -198,7 +208,10 @@ func encode(data interface{}) ([]byte, error) {
 }
 
 func Client(connect string) error {
-	p, g := big.NewInt(37), big.NewInt(5)
+	p, g, err := GetNISTParams()
+	if err != nil {
+		return err
+	}
 	sess := NewDHSession(p, g)
 	exchange := DHExchange{sess.Group, sess.PublicKey}
 
