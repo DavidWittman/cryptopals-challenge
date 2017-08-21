@@ -29,6 +29,15 @@ type DHClient struct {
 	session *DHSession
 }
 
+func encode(data interface{}) ([]byte, error) {
+	var b bytes.Buffer
+	encoder := gob.NewEncoder(&b)
+	if err := encoder.Encode(data); err != nil {
+		return []byte{}, err
+	}
+	return b.Bytes(), nil
+}
+
 func (c *DHClient) read() []byte {
 	var length uint16
 
@@ -93,17 +102,18 @@ func (c *DHClient) SendEncrypted(b []byte) error {
 	if err != nil {
 		return err
 	}
-	encoded, err := encode(append(cipher, iv...))
-	if err != nil {
-		return err
-	}
-	c.Send(encoded)
+	c.Send(append(cipher, iv...))
 	return nil
 }
 
-func (c *DHClient) Send(b []byte) {
+func (c *DHClient) Send(data interface{}) {
+	b, err := encode(data)
+	if err != nil {
+		panic(err)
+	}
+
 	var length bytes.Buffer
-	err := binary.Write(&length, binary.LittleEndian, uint16(len(b)))
+	err = binary.Write(&length, binary.LittleEndian, uint16(len(b)))
 	if err != nil {
 		panic(err)
 	}

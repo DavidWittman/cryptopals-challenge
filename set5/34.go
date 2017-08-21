@@ -60,12 +60,9 @@
  *    easily predicted.
  */
 
-// TODO(dw): Move `encode` to `Send`
 package set_five
 
 import (
-	"bytes"
-	"encoding/gob"
 	"log"
 	"net"
 )
@@ -101,11 +98,7 @@ func Bob(listen string) {
 
 		// Send over our public key in an exchange object so Alice can generate s
 		e.PublicKey = server.session.PublicKey
-		b, err := encode(e)
-		if err != nil {
-			panic(err)
-		}
-		server.Send(b)
+		server.Send(e)
 
 		// Now we're expecting Alice to send an encrypted message
 		message, err := server.ReadEncrypted()
@@ -151,12 +144,8 @@ func Eve(listen, dest string) {
 		// Use P for the public key to make the session key predictable
 		e.PublicKey = e.Group.P
 
-		// Encode/send exchange object with fixed key to Alice
-		b, err := encode(e)
-		if err != nil {
-			panic(err)
-		}
-		server.Send(b)
+		// Send exchange object with fixed key to Alice
+		server.Send(e)
 
 		// Establish fixed-key MITM connection to Bob
 		clientConn, err := net.Dial("tcp", dest)
@@ -168,7 +157,7 @@ func Eve(listen, dest string) {
 		clientSession := NewDHSession(e.Group.P, e.Group.G)
 		clientSession.PublicKey = e.Group.P
 		client := &DHClient{"EveClient", clientConn, clientSession}
-		client.Send(b)
+		client.Send(e)
 
 		// We don't actually need Bob's public key because our fixed-key attack has
 		// made the session key preditable.
@@ -198,15 +187,6 @@ func Eve(listen, dest string) {
 	}
 }
 
-func encode(data interface{}) ([]byte, error) {
-	var b bytes.Buffer
-	encoder := gob.NewEncoder(&b)
-	if err := encoder.Encode(data); err != nil {
-		return []byte{}, err
-	}
-	return b.Bytes(), nil
-}
-
 func Alice(connect string) error {
 	p, g, err := GetNISTParams()
 	if err != nil {
@@ -215,11 +195,6 @@ func Alice(connect string) error {
 	sess := NewDHSession(p, g)
 	exchange := DHExchange{sess.Group, sess.PublicKey}
 
-	b, err := encode(exchange)
-	if err != nil {
-		return err
-	}
-
 	conn, err := net.Dial("tcp", connect)
 	if err != nil {
 		return err
@@ -227,7 +202,7 @@ func Alice(connect string) error {
 	defer conn.Close()
 
 	client := &DHClient{"Alice", conn, sess}
-	client.Send(b)
+	client.Send(exchange)
 
 	server := client.ReadMessage(DHE_MSG_EXCHANGE)
 	bob := server.(DHExchange)
