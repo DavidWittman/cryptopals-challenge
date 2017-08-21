@@ -71,7 +71,8 @@ const (
 	SECRET_MESSAGE = "Go Ninja, Go Ninja, GO: Go Ninja, Go Ninja, GO!"
 )
 
-// StartServer creates a TCP listener for a Diffie Hellman Exchange
+// Bob listens on a TCP socket and acts as the server party in a Diffie
+// Hellman Key Exchange
 //
 // `listen` is the ip:port or :port to listen on
 func Bob(listen string) {
@@ -81,43 +82,41 @@ func Bob(listen string) {
 	}
 	defer socket.Close()
 
-	for {
-		conn, err := socket.Accept()
-		if err != nil {
-			log.Println("Error establishing connection:", err)
-			continue
-		}
+	conn, err := socket.Accept()
+	if err != nil {
+		log.Println("Error establishing connection:", err)
+		panic(err)
+	}
 
-		server := &DHClient{"Bob", conn, nil}
-		exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-		e := exchange.(DHExchange)
+	server := &DHClient{"Bob", conn, nil}
+	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
+	e := exchange.(DHExchange)
 
-		// Server = Bob, Client = Alice
-		server.session = NewDHSession(e.Group.P, e.Group.G)
-		server.session.GenerateSessionKeys(e.PublicKey)
+	// Server = Bob, Client = Alice
+	server.session = NewDHSession(e.Group.P, e.Group.G)
+	server.session.GenerateSessionKeys(e.PublicKey)
 
-		// Send over our public key in an exchange object so Alice can generate s
-		e.PublicKey = server.session.PublicKey
-		server.Send(e)
+	// Send over our public key in an exchange object so Alice can generate s
+	e.PublicKey = server.session.PublicKey
+	server.Send(e)
 
-		// Now we're expecting Alice to send an encrypted message
-		message, err := server.ReadEncrypted()
-		if err != nil {
-			panic(err)
-		}
+	// Now we're expecting Alice to send an encrypted message
+	message, err := server.ReadEncrypted()
+	if err != nil {
+		panic(err)
+	}
 
-		err = server.SendEncrypted(message)
-		if err != nil {
-			panic(err)
-		}
+	err = server.SendEncrypted(message)
+	if err != nil {
+		panic(err)
 	}
 }
 
-// StartMITMServer creates a TCP listener for a Diffie Hellman Exchange and
-// acts as a proxy between two clients to simulate a man-in-the-middle.
+// Eve is an evil TCP listener which execute a MITM attack against a
+// two parties (Alice and Bob) in a DH key exchange.
 //
 // `listen` is the ip:port or :port to listen on
-// `dest` is the ip:port of the
+// `dest` is the ip:port of Bob
 func Eve(listen, dest string) {
 	socket, err := net.Listen("tcp", listen)
 	if err != nil {
@@ -125,68 +124,68 @@ func Eve(listen, dest string) {
 	}
 	defer socket.Close()
 
-	for {
-		conn, err := socket.Accept()
-		if err != nil {
-			log.Println("Error establishing connection:", err)
-			continue
-		}
+	conn, err := socket.Accept()
+	if err != nil {
+		log.Println("Error establishing connection:", err)
+		panic(err)
+	}
 
-		server := &DHClient{"Eve", conn, nil}
-		exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-		e := exchange.(DHExchange)
+	server := &DHClient{"Eve", conn, nil}
+	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
+	e := exchange.(DHExchange)
 
-		server.session = NewDHSession(e.Group.P, e.Group.G)
-		// Use p for generating Eve's session keys so that we generate the same
-		// session key between the two sessions
-		server.session.GenerateSessionKeys(e.Group.P)
+	server.session = NewDHSession(e.Group.P, e.Group.G)
+	// Use p for generating Eve's session keys so that we generate the same
+	// session key between the two sessions
+	server.session.GenerateSessionKeys(e.Group.P)
 
-		// Use P for the public key to make the session key predictable
-		e.PublicKey = e.Group.P
+	// Use P for the public key to make the session key predictable
+	e.PublicKey = e.Group.P
 
-		// Send exchange object with fixed key to Alice
-		server.Send(e)
+	// Send exchange object with fixed key to Alice
+	server.Send(e)
 
-		// Establish fixed-key MITM connection to Bob
-		clientConn, err := net.Dial("tcp", dest)
-		if err != nil {
-			panic(err)
-		}
-		defer clientConn.Close()
+	// Establish fixed-key MITM connection to Bob
+	clientConn, err := net.Dial("tcp", dest)
+	if err != nil {
+		panic(err)
+	}
+	defer clientConn.Close()
 
-		clientSession := NewDHSession(e.Group.P, e.Group.G)
-		clientSession.PublicKey = e.Group.P
-		client := &DHClient{"EveClient", clientConn, clientSession}
-		client.Send(e)
+	clientSession := NewDHSession(e.Group.P, e.Group.G)
+	clientSession.PublicKey = e.Group.P
+	client := &DHClient{"EveClient", clientConn, clientSession}
+	client.Send(e)
 
-		// We don't actually need Bob's public key because our fixed-key attack has
-		// made the session key preditable.
-		_ = client.ReadMessage(DHE_MSG_EXCHANGE)
-		clientSession.GenerateSessionKeys(e.Group.P)
+	// We don't actually need Bob's public key because our fixed-key attack has
+	// made the session key preditable.
+	_ = client.ReadMessage(DHE_MSG_EXCHANGE)
+	clientSession.GenerateSessionKeys(e.Group.P)
 
-		// Now we're expecting Alice to send an encrypted message
-		message, err := server.ReadEncrypted()
-		if err != nil {
-			panic(err)
-		}
+	// Intercept two messages: A -> E -> B, B -> E -> A
+	message, err := server.ReadEncrypted()
+	if err != nil {
+		panic(err)
+	}
 
-		err = client.SendEncrypted(message)
-		if err != nil {
-			panic(err)
-		}
+	err = client.SendEncrypted(message)
+	if err != nil {
+		panic(err)
+	}
 
-		message, err = client.ReadEncrypted()
-		if err != nil {
-			panic(err)
-		}
+	message, err = client.ReadEncrypted()
+	if err != nil {
+		panic(err)
+	}
 
-		err = server.SendEncrypted(message)
-		if err != nil {
-			panic(err)
-		}
+	err = server.SendEncrypted(message)
+	if err != nil {
+		panic(err)
 	}
 }
 
+// Alice is the client party in a Diffie-Hellman Key Exchange
+// `connect` is the address of the server to connect to
 func Alice(connect string) error {
 	p, g, err := GetNISTParams()
 	if err != nil {
