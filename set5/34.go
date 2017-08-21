@@ -77,7 +77,7 @@ const (
 // StartServer creates a TCP listener for a Diffie Hellman Exchange
 //
 // `listen` is the ip:port or :port to listen on
-func StartServer(listen string) {
+func Bob(listen string) {
 	socket, err := net.Listen("tcp", listen)
 	if err != nil {
 		panic(err)
@@ -125,7 +125,7 @@ func StartServer(listen string) {
 //
 // `listen` is the ip:port or :port to listen on
 // `dest` is the ip:port of the
-func StartMITMServer(listen, dest string) {
+func Eve(listen, dest string) {
 	socket, err := net.Listen("tcp", listen)
 	if err != nil {
 		panic(err)
@@ -207,7 +207,7 @@ func encode(data interface{}) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func Client(connect string) error {
+func Alice(connect string) error {
 	p, g, err := GetNISTParams()
 	if err != nil {
 		return err

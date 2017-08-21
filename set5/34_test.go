@@ -6,22 +6,22 @@ import (
 
 func TestDHExchange(t *testing.T) {
 	listen := "localhost:3000"
-	go StartServer(listen)
-	_ = Client(listen)
+	go Bob(listen)
+	_ = Alice(listen)
 }
 
 // Simulate a MITM by having Alice connect directly to Eve
 // Alice -> Eve (:3666) -> Bob (:3000)
-func TestDHMITM(t *testing.T) {
+func TestDHFixedKeyAttack(t *testing.T) {
 	bobAddr := "localhost:3333"
 	eveAddr := "localhost:3666"
 
-	go StartMITMServer(eveAddr, bobAddr)
-	go StartServer(bobAddr)
+	go Eve(eveAddr, bobAddr)
+	go Bob(bobAddr)
 
 	// TODO(dw): This fails some of the time when the Client starts up
 	// before the servers come online
-	if err := Client(eveAddr); err != nil {
+	if err := Alice(eveAddr); err != nil {
 		t.Error(err)
 	}
 }
