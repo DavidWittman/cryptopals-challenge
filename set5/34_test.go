@@ -8,7 +8,17 @@ import (
 func TestDHExchange(t *testing.T) {
 	listen := "localhost:3000"
 	go Bob(listen)
-	_ = Alice(listen)
+
+	// Sleep for a bit to allow time for Bob to start
+	time.Sleep(250 * time.Millisecond)
+
+	result, err := Alice(listen)
+	if err != nil {
+		t.Error(err)
+	}
+	if result != SECRET_MESSAGE {
+		t.Errorf("Encrypted response does not match.\n\tExpected:\t%v\n\tGot:\t%v", SECRET_MESSAGE, result)
+	}
 }
 
 // Simulate a MITM by having Alice connect directly to Eve
@@ -23,7 +33,11 @@ func TestDHFixedKeyAttack(t *testing.T) {
 	// Sleep for a bit to allow time for Bob and Eve to start
 	time.Sleep(250 * time.Millisecond)
 
-	if err := Alice(eveAddr); err != nil {
+	result, err := Alice(eveAddr)
+	if err != nil {
 		t.Error(err)
+	}
+	if result != SECRET_MESSAGE {
+		t.Errorf("Encrypted response does not match.\n\tExpected:\t%v\n\tGot:\t%v", SECRET_MESSAGE, result)
 	}
 }

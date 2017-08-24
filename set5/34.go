@@ -186,17 +186,17 @@ func Eve(listen, dest string) {
 
 // Alice is the client party in a Diffie-Hellman Key Exchange
 // `connect` is the address of the server to connect to
-func Alice(connect string) error {
+func Alice(connect string) (string, error) {
 	p, g, err := GetNISTParams()
 	if err != nil {
-		return err
+		return "", err
 	}
 	sess := NewDHSession(p, g)
 	exchange := DHExchange{sess.Group, sess.PublicKey}
 
 	conn, err := net.Dial("tcp", connect)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer conn.Close()
 
@@ -211,13 +211,13 @@ func Alice(connect string) error {
 	// Now that we have the session key, send the secret message to Bob
 	err = client.SendEncrypted([]byte(SECRET_MESSAGE))
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = client.ReadEncrypted()
+	message, err := client.ReadEncrypted()
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return string(message), nil
 }
