@@ -7,7 +7,7 @@
  * Replace A and B with C and S (client & server)
  *
  * C & S
- * Agree on N=[NIST Prime], g=2, k=3, I (email), P (password)
+ *     Agree on N=[NIST Prime], g=2, k=3, I (email), P (password)
  * S
  *     1. Generate salt as random integer
  *     2. Generate string xH=SHA256(salt|password)
