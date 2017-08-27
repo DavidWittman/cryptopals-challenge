@@ -11,8 +11,8 @@ func TestDHMaliciousGEquals1(t *testing.T) {
 	bobAddr := "localhost:3333"
 	eveAddr := "localhost:3666"
 
-	go EveGEquals1(eveAddr, bobAddr)
-	go Bob(bobAddr)
+	go StartMITMServer(EveGEquals1, eveAddr, bobAddr)
+	go StartServer(Bob, bobAddr)
 
 	// Sleep for a bit to allow time for Bob and Eve to start
 	time.Sleep(250 * time.Millisecond)
@@ -33,8 +33,8 @@ func TestDHMaliciousGEqualsP(t *testing.T) {
 	bobAddr := "localhost:4444"
 	eveAddr := "localhost:4666"
 
-	go EveGEqualsP(eveAddr, bobAddr)
-	go Bob(bobAddr)
+	go StartMITMServer(EveGEqualsP, eveAddr, bobAddr)
+	go StartServer(Bob, bobAddr)
 
 	// Sleep for a bit to allow time for Bob and Eve to start
 	time.Sleep(250 * time.Millisecond)
@@ -55,8 +55,8 @@ func TestDHMaliciousGEqualsPMinus1(t *testing.T) {
 	bobAddr := "localhost:5555"
 	eveAddr := "localhost:5666"
 
-	go EveGEqualsPMinus1(eveAddr, bobAddr)
-	go Bob(bobAddr)
+	go StartMITMServer(EveGEqualsPMinus1, eveAddr, bobAddr)
+	go StartServer(Bob, bobAddr)
 
 	// Sleep for a bit to allow time for Bob and Eve to start
 	time.Sleep(250 * time.Millisecond)

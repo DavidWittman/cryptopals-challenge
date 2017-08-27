@@ -7,7 +7,7 @@ import (
 
 func TestDHExchange(t *testing.T) {
 	listen := "localhost:3000"
-	go Bob(listen)
+	go StartServer(Bob, listen)
 
 	// Sleep for a bit to allow time for Bob to start
 	time.Sleep(250 * time.Millisecond)
@@ -27,8 +27,8 @@ func TestDHFixedKeyAttack(t *testing.T) {
 	bobAddr := "localhost:3333"
 	eveAddr := "localhost:3666"
 
-	go Eve(eveAddr, bobAddr)
-	go Bob(bobAddr)
+	go StartMITMServer(Eve, eveAddr, bobAddr)
+	go StartServer(Bob, bobAddr)
 
 	// Sleep for a bit to allow time for Bob and Eve to start
 	time.Sleep(250 * time.Millisecond)

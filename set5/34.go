@@ -63,7 +63,6 @@
 package set_five
 
 import (
-	"log"
 	"net"
 )
 
@@ -75,19 +74,7 @@ const (
 // Hellman Key Exchange
 //
 // `listen` is the ip:port or :port to listen on
-func Bob(listen string) {
-	socket, err := net.Listen("tcp", listen)
-	if err != nil {
-		panic(err)
-	}
-	defer socket.Close()
-
-	conn, err := socket.Accept()
-	if err != nil {
-		log.Println("Error establishing connection:", err)
-		panic(err)
-	}
-
+func Bob(conn net.Conn) error {
 	server := NewDHClient("Bob", conn, nil)
 	e := server.ReadDHE()
 
@@ -102,34 +89,19 @@ func Bob(listen string) {
 	// Now we're expecting Alice to send an encrypted message
 	message, err := server.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = server.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
-// Eve is an evil TCP listener which execute a MITM attack against a
-// two parties (Alice and Bob) in a DH key exchange.
-//
-// `listen` is the ip:port or :port to listen on
-// `dest` is the ip:port of Bob
-func Eve(listen, dest string) {
-	socket, err := net.Listen("tcp", listen)
-	if err != nil {
-		panic(err)
-	}
-	defer socket.Close()
-
-	conn, err := socket.Accept()
-	if err != nil {
-		log.Println("Error establishing connection:", err)
-		panic(err)
-	}
-
-	server := NewDHClient("Eve", conn, nil)
+func Eve(alice, bob net.Conn) error {
+	server := NewDHClient("Eve", alice, nil)
 	e := server.ReadDHE()
 
 	server.session = NewDHSession(e.Group.P, e.Group.G)
@@ -143,16 +115,9 @@ func Eve(listen, dest string) {
 	// Send exchange object with fixed key to Alice
 	server.Send(e)
 
-	// Establish fixed-key MITM connection to Bob
-	clientConn, err := net.Dial("tcp", dest)
-	if err != nil {
-		panic(err)
-	}
-	defer clientConn.Close()
-
 	clientSession := NewDHSession(e.Group.P, e.Group.G)
 	clientSession.PublicKey = e.Group.P
-	client := NewDHClient("EveClient", clientConn, clientSession)
+	client := NewDHClient("EveClient", bob, clientSession)
 	client.Send(e)
 
 	// We don't actually need Bob's public key because our fixed-key attack has
@@ -163,23 +128,25 @@ func Eve(listen, dest string) {
 	// Intercept two messages: A -> E -> B, B -> E -> A
 	message, err := server.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = client.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	message, err = client.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = server.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // Alice is the client party in a Diffie-Hellman Key Exchange

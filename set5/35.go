@@ -33,7 +33,6 @@
 package set_five
 
 import (
-	"log"
 	"math/big"
 	"net"
 )
@@ -48,22 +47,11 @@ import (
 //
 // `listen` is the ip:port or :port to listen on
 // `dest` is the ip:port of Bob
-func EveGEquals1(listen, dest string) {
+func EveGEquals1(alice, bob net.Conn) error {
 	// When g == 1, B == 1 && s == 1
 	g := big.NewInt(1)
-	socket, err := net.Listen("tcp", listen)
-	if err != nil {
-		panic(err)
-	}
-	defer socket.Close()
 
-	conn, err := socket.Accept()
-	if err != nil {
-		log.Println("Error establishing connection:", err)
-		panic(err)
-	}
-
-	server := NewDHClient("Eve", conn, nil)
+	server := NewDHClient("Eve", alice, nil)
 	e := server.ReadDHE()
 
 	// Manipulate g, and use g as A's public key to generate a session key of 1
@@ -74,15 +62,8 @@ func EveGEquals1(listen, dest string) {
 	e.PublicKey = server.session.PublicKey
 	server.Send(e)
 
-	// Establish fixed-key MITM connection to Bob
-	clientConn, err := net.Dial("tcp", dest)
-	if err != nil {
-		panic(err)
-	}
-	defer clientConn.Close()
-
 	clientSession := NewDHSession(e.Group.P, g)
-	client := NewDHClient("EveClient", clientConn, clientSession)
+	client := NewDHClient("EveClient", bob, clientSession)
 	client.Send(e)
 
 	_ = client.ReadDHE()
@@ -92,23 +73,25 @@ func EveGEquals1(listen, dest string) {
 	// Intercept two messages: A -> E -> B, B -> E -> A
 	message, err := server.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = client.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	message, err = client.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = server.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // Eve is an evil TCP listener which execute a MITM attack against a
@@ -121,21 +104,9 @@ func EveGEquals1(listen, dest string) {
 //
 // `listen` is the ip:port or :port to listen on
 // `dest` is the ip:port of Bob
-func EveGEqualsP(listen, dest string) {
+func EveGEqualsP(alice, bob net.Conn) error {
 	// When g == p, B == 0 && s == 0
-	socket, err := net.Listen("tcp", listen)
-	if err != nil {
-		panic(err)
-	}
-	defer socket.Close()
-
-	conn, err := socket.Accept()
-	if err != nil {
-		log.Println("Error establishing connection:", err)
-		panic(err)
-	}
-
-	server := NewDHClient("Eve", conn, nil)
+	server := NewDHClient("Eve", alice, nil)
 	e := server.ReadDHE()
 
 	// Manipulate g to be p, and use 0 as A's public key to generate a session key of 0
@@ -146,15 +117,8 @@ func EveGEqualsP(listen, dest string) {
 	e.PublicKey = server.session.PublicKey
 	server.Send(e)
 
-	// Establish fixed-key MITM connection to Bob
-	clientConn, err := net.Dial("tcp", dest)
-	if err != nil {
-		panic(err)
-	}
-	defer clientConn.Close()
-
 	clientSession := NewDHSession(e.Group.P, e.Group.P)
-	client := NewDHClient("EveClient", clientConn, clientSession)
+	client := NewDHClient("EveClient", bob, clientSession)
 	client.Send(e)
 
 	_ = client.ReadDHE()
@@ -164,23 +128,25 @@ func EveGEqualsP(listen, dest string) {
 	// Intercept two messages: A -> E -> B, B -> E -> A
 	message, err := server.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = client.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	message, err = client.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = server.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 // Eve is an evil TCP listener which execute a MITM attack against a
@@ -193,21 +159,9 @@ func EveGEqualsP(listen, dest string) {
 //
 // `listen` is the ip:port or :port to listen on
 // `dest` is the ip:port of Bob
-func EveGEqualsPMinus1(listen, dest string) {
+func EveGEqualsPMinus1(alice, bob net.Conn) error {
 	// When g == p-1, B == 1 && s == 1
-	socket, err := net.Listen("tcp", listen)
-	if err != nil {
-		panic(err)
-	}
-	defer socket.Close()
-
-	conn, err := socket.Accept()
-	if err != nil {
-		log.Println("Error establishing connection:", err)
-		panic(err)
-	}
-
-	server := NewDHClient("Eve", conn, nil)
+	server := NewDHClient("Eve", alice, nil)
 	e := server.ReadDHE()
 
 	// g = p - 1
@@ -221,15 +175,8 @@ func EveGEqualsPMinus1(listen, dest string) {
 	e.PublicKey = server.session.PublicKey
 	server.Send(e)
 
-	// Establish fixed-key MITM connection to Bob
-	clientConn, err := net.Dial("tcp", dest)
-	if err != nil {
-		panic(err)
-	}
-	defer clientConn.Close()
-
 	clientSession := NewDHSession(e.Group.P, g)
-	client := NewDHClient("EveClient", clientConn, clientSession)
+	client := NewDHClient("EveClient", bob, clientSession)
 	client.Send(e)
 
 	_ = client.ReadDHE()
@@ -239,21 +186,23 @@ func EveGEqualsPMinus1(listen, dest string) {
 	// Intercept two messages: A -> E -> B, B -> E -> A
 	message, err := server.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = client.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	message, err = client.ReadEncrypted()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = server.SendEncrypted(message)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
