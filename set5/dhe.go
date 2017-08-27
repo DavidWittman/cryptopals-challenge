@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	DHE_MSG_EXCHANGE = 0x1
-	DHE_MSG_BYTES    = 0x2
-	KEYSIZE          = 16
+	TCP_DHE   = 0x1
+	TCP_BYTES = 0x2
+
+	KEYSIZE = 16
 )
 
 type DHExchange struct {
@@ -56,7 +57,7 @@ func (c *DHClient) read() []byte {
 }
 
 func (c *DHClient) ReadDHE() DHExchange {
-	bob := c.ReadMessage(DHE_MSG_EXCHANGE)
+	bob := c.ReadMessage(TCP_DHE)
 	return bob.(DHExchange)
 }
 
@@ -64,7 +65,7 @@ func (c *DHClient) ReadMessage(kind byte) interface{} {
 	msgReader := bytes.NewReader(c.read())
 	decoder := gob.NewDecoder(msgReader)
 	switch kind {
-	case DHE_MSG_EXCHANGE:
+	case TCP_DHE:
 		var decoded DHExchange
 		err := decoder.Decode(&decoded)
 		if err != nil {
@@ -83,7 +84,7 @@ func (c *DHClient) ReadMessage(kind byte) interface{} {
 
 func (c *DHClient) ReadEncrypted() ([]byte, error) {
 	key := c.session.sha1SessionKey[:KEYSIZE]
-	m := c.ReadMessage(DHE_MSG_BYTES)
+	m := c.ReadMessage(TCP_BYTES)
 	blob := m.([]byte)
 	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
 
