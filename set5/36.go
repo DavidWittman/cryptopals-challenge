@@ -48,3 +48,9 @@
  */
 
 package set_five
+
+type SRPExchange struct {
+	Email    string
+	Password string
+	Group    *DHGroup
+}

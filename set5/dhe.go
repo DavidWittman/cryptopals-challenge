@@ -1,10 +1,6 @@
 package set_five
 
 import (
-	"bytes"
-	"encoding/binary"
-	"encoding/gob"
-	"io"
 	"log"
 	"math/big"
 	"net"
@@ -13,9 +9,6 @@ import (
 )
 
 const (
-	TCP_DHE   = 0x1
-	TCP_BYTES = 0x2
-
 	KEYSIZE = 16
 )
 
@@ -26,65 +19,26 @@ type DHExchange struct {
 
 type DHClient struct {
 	Name    string
-	conn    net.Conn
+	conn    *TCPClient
 	session *DHSession
 }
 
-func encode(data interface{}) ([]byte, error) {
-	var b bytes.Buffer
-	encoder := gob.NewEncoder(&b)
-	if err := encoder.Encode(data); err != nil {
-		return []byte{}, err
+func NewDHClient(name string, conn net.Conn, session *DHSession) *DHClient {
+	return &DHClient{
+		name,
+		&TCPClient{conn},
+		session,
 	}
-	return b.Bytes(), nil
-}
-
-func (c *DHClient) read() []byte {
-	var length uint16
-
-	err := binary.Read(c.conn, binary.LittleEndian, &length)
-	if err != nil {
-		panic(err)
-	}
-
-	msg := make([]byte, length)
-	_, err = io.ReadFull(c.conn, msg)
-	if err != nil {
-		panic(err)
-	}
-
-	return msg
 }
 
 func (c *DHClient) ReadDHE() DHExchange {
-	bob := c.ReadMessage(TCP_DHE)
+	bob := c.conn.ReadMessage(TCP_DHE)
 	return bob.(DHExchange)
-}
-
-func (c *DHClient) ReadMessage(kind byte) interface{} {
-	msgReader := bytes.NewReader(c.read())
-	decoder := gob.NewDecoder(msgReader)
-	switch kind {
-	case TCP_DHE:
-		var decoded DHExchange
-		err := decoder.Decode(&decoded)
-		if err != nil {
-			panic(err)
-		}
-		return decoded
-	default:
-		var decoded []byte
-		err := decoder.Decode(&decoded)
-		if err != nil {
-			panic(err)
-		}
-		return decoded
-	}
 }
 
 func (c *DHClient) ReadEncrypted() ([]byte, error) {
 	key := c.session.sha1SessionKey[:KEYSIZE]
-	m := c.ReadMessage(TCP_BYTES)
+	m := c.conn.ReadMessage(TCP_BYTES)
 	blob := m.([]byte)
 	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
 
@@ -106,21 +60,6 @@ func (c *DHClient) SendEncrypted(b []byte) error {
 	if err != nil {
 		return err
 	}
-	c.Send(append(cipher, iv...))
+	c.conn.Send(append(cipher, iv...))
 	return nil
-}
-
-func (c *DHClient) Send(data interface{}) {
-	b, err := encode(data)
-	if err != nil {
-		panic(err)
-	}
-
-	var length bytes.Buffer
-	err = binary.Write(&length, binary.LittleEndian, uint16(len(b)))
-	if err != nil {
-		panic(err)
-	}
-	c.conn.Write(length.Bytes())
-	c.conn.Write(b)
 }

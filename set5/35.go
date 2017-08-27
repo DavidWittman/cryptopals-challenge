@@ -63,7 +63,7 @@ func EveGEquals1(listen, dest string) {
 		panic(err)
 	}
 
-	server := &DHClient{"Eve", conn, nil}
+	server := NewDHClient("Eve", conn, nil)
 	e := server.ReadDHE()
 
 	// Manipulate g, and use g as A's public key to generate a session key of 1
@@ -72,7 +72,7 @@ func EveGEquals1(listen, dest string) {
 
 	// Update the exchange object to use Eve's public key
 	e.PublicKey = server.session.PublicKey
-	server.Send(e)
+	server.conn.Send(e)
 
 	// Establish fixed-key MITM connection to Bob
 	clientConn, err := net.Dial("tcp", dest)
@@ -82,8 +82,8 @@ func EveGEquals1(listen, dest string) {
 	defer clientConn.Close()
 
 	clientSession := NewDHSession(e.Group.P, g)
-	client := &DHClient{"EveClient", clientConn, clientSession}
-	client.Send(e)
+	client := NewDHClient("EveClient", clientConn, clientSession)
+	client.conn.Send(e)
 
 	_ = client.ReadDHE()
 	// Use g as the Public Key to generate a session key of 1
@@ -135,7 +135,7 @@ func EveGEqualsP(listen, dest string) {
 		panic(err)
 	}
 
-	server := &DHClient{"Eve", conn, nil}
+	server := NewDHClient("Eve", conn, nil)
 	e := server.ReadDHE()
 
 	// Manipulate g to be p, and use 0 as A's public key to generate a session key of 0
@@ -144,7 +144,7 @@ func EveGEqualsP(listen, dest string) {
 
 	// Update the exchange object to use Eve's public key
 	e.PublicKey = server.session.PublicKey
-	server.Send(e)
+	server.conn.Send(e)
 
 	// Establish fixed-key MITM connection to Bob
 	clientConn, err := net.Dial("tcp", dest)
@@ -154,8 +154,8 @@ func EveGEqualsP(listen, dest string) {
 	defer clientConn.Close()
 
 	clientSession := NewDHSession(e.Group.P, e.Group.P)
-	client := &DHClient{"EveClient", clientConn, clientSession}
-	client.Send(e)
+	client := NewDHClient("EveClient", clientConn, clientSession)
+	client.conn.Send(e)
 
 	_ = client.ReadDHE()
 	// Use 0 as the Public Key to generate a session key of 0
@@ -207,7 +207,7 @@ func EveGEqualsPMinus1(listen, dest string) {
 		panic(err)
 	}
 
-	server := &DHClient{"Eve", conn, nil}
+	server := NewDHClient("Eve", conn, nil)
 	e := server.ReadDHE()
 
 	// g = p - 1
@@ -219,7 +219,7 @@ func EveGEqualsPMinus1(listen, dest string) {
 
 	// Update the exchange object to use Eve's public key
 	e.PublicKey = server.session.PublicKey
-	server.Send(e)
+	server.conn.Send(e)
 
 	// Establish fixed-key MITM connection to Bob
 	clientConn, err := net.Dial("tcp", dest)
@@ -229,8 +229,8 @@ func EveGEqualsPMinus1(listen, dest string) {
 	defer clientConn.Close()
 
 	clientSession := NewDHSession(e.Group.P, g)
-	client := &DHClient{"EveClient", clientConn, clientSession}
-	client.Send(e)
+	client := NewDHClient("EveClient", clientConn, clientSession)
+	client.conn.Send(e)
 
 	_ = client.ReadDHE()
 	// Use 0 as the Public Key to generate a session key of 0

@@ -88,7 +88,7 @@ func Bob(listen string) {
 		panic(err)
 	}
 
-	server := &DHClient{"Bob", conn, nil}
+	server := NewDHClient("Bob", conn, nil)
 	e := server.ReadDHE()
 
 	// Server = Bob, Client = Alice
@@ -97,7 +97,7 @@ func Bob(listen string) {
 
 	// Send over our public key in an exchange object so Alice can generate s
 	e.PublicKey = server.session.PublicKey
-	server.Send(e)
+	server.conn.Send(e)
 
 	// Now we're expecting Alice to send an encrypted message
 	message, err := server.ReadEncrypted()
@@ -129,7 +129,7 @@ func Eve(listen, dest string) {
 		panic(err)
 	}
 
-	server := &DHClient{"Eve", conn, nil}
+	server := NewDHClient("Eve", conn, nil)
 	e := server.ReadDHE()
 
 	server.session = NewDHSession(e.Group.P, e.Group.G)
@@ -141,7 +141,7 @@ func Eve(listen, dest string) {
 	e.PublicKey = e.Group.P
 
 	// Send exchange object with fixed key to Alice
-	server.Send(e)
+	server.conn.Send(e)
 
 	// Establish fixed-key MITM connection to Bob
 	clientConn, err := net.Dial("tcp", dest)
@@ -152,8 +152,8 @@ func Eve(listen, dest string) {
 
 	clientSession := NewDHSession(e.Group.P, e.Group.G)
 	clientSession.PublicKey = e.Group.P
-	client := &DHClient{"EveClient", clientConn, clientSession}
-	client.Send(e)
+	client := NewDHClient("EveClient", clientConn, clientSession)
+	client.conn.Send(e)
 
 	// We don't actually need Bob's public key because our fixed-key attack has
 	// made the session key preditable.
@@ -198,8 +198,8 @@ func Alice(connect string) (string, error) {
 	}
 	defer conn.Close()
 
-	client := &DHClient{"Alice", conn, sess}
-	client.Send(exchange)
+	client := NewDHClient("Alice", conn, sess)
+	client.conn.Send(exchange)
 
 	bob := client.ReadDHE()
 
