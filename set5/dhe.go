@@ -55,8 +55,11 @@ func (c *DHClient) read() []byte {
 	return msg
 }
 
-// TODO(dw): Just replace this with a Handshake method and a method for
-// receiving encrypted messages
+func (c *DHClient) ReadDHE() DHExchange {
+	bob := c.ReadMessage(DHE_MSG_EXCHANGE)
+	return bob.(DHExchange)
+}
+
 func (c *DHClient) ReadMessage(kind byte) interface{} {
 	msgReader := bytes.NewReader(c.read())
 	decoder := gob.NewDecoder(msgReader)

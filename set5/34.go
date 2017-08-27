@@ -89,8 +89,7 @@ func Bob(listen string) {
 	}
 
 	server := &DHClient{"Bob", conn, nil}
-	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-	e := exchange.(DHExchange)
+	e := server.ReadDHE()
 
 	// Server = Bob, Client = Alice
 	server.session = NewDHSession(e.Group.P, e.Group.G)
@@ -131,8 +130,7 @@ func Eve(listen, dest string) {
 	}
 
 	server := &DHClient{"Eve", conn, nil}
-	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-	e := exchange.(DHExchange)
+	e := server.ReadDHE()
 
 	server.session = NewDHSession(e.Group.P, e.Group.G)
 	// Use p for generating Eve's session keys so that we generate the same
@@ -159,7 +157,7 @@ func Eve(listen, dest string) {
 
 	// We don't actually need Bob's public key because our fixed-key attack has
 	// made the session key preditable.
-	_ = client.ReadMessage(DHE_MSG_EXCHANGE)
+	_ = client.ReadDHE()
 	clientSession.GenerateSessionKeys(e.Group.P)
 
 	// Intercept two messages: A -> E -> B, B -> E -> A
@@ -203,8 +201,7 @@ func Alice(connect string) (string, error) {
 	client := &DHClient{"Alice", conn, sess}
 	client.Send(exchange)
 
-	server := client.ReadMessage(DHE_MSG_EXCHANGE)
-	bob := server.(DHExchange)
+	bob := client.ReadDHE()
 
 	sess.GenerateSessionKeys(bob.PublicKey)
 

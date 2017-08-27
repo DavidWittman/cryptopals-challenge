@@ -64,8 +64,7 @@ func EveGEquals1(listen, dest string) {
 	}
 
 	server := &DHClient{"Eve", conn, nil}
-	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-	e := exchange.(DHExchange)
+	e := server.ReadDHE()
 
 	// Manipulate g, and use g as A's public key to generate a session key of 1
 	server.session = NewDHSession(e.Group.P, g)
@@ -86,7 +85,7 @@ func EveGEquals1(listen, dest string) {
 	client := &DHClient{"EveClient", clientConn, clientSession}
 	client.Send(e)
 
-	_ = client.ReadMessage(DHE_MSG_EXCHANGE)
+	_ = client.ReadDHE()
 	// Use g as the Public Key to generate a session key of 1
 	clientSession.GenerateSessionKeys(g)
 
@@ -137,8 +136,7 @@ func EveGEqualsP(listen, dest string) {
 	}
 
 	server := &DHClient{"Eve", conn, nil}
-	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-	e := exchange.(DHExchange)
+	e := server.ReadDHE()
 
 	// Manipulate g to be p, and use 0 as A's public key to generate a session key of 0
 	server.session = NewDHSession(e.Group.P, e.Group.P)
@@ -159,7 +157,7 @@ func EveGEqualsP(listen, dest string) {
 	client := &DHClient{"EveClient", clientConn, clientSession}
 	client.Send(e)
 
-	_ = client.ReadMessage(DHE_MSG_EXCHANGE)
+	_ = client.ReadDHE()
 	// Use 0 as the Public Key to generate a session key of 0
 	clientSession.GenerateSessionKeys(big.NewInt(0))
 
@@ -210,8 +208,8 @@ func EveGEqualsPMinus1(listen, dest string) {
 	}
 
 	server := &DHClient{"Eve", conn, nil}
-	exchange := server.ReadMessage(DHE_MSG_EXCHANGE)
-	e := exchange.(DHExchange)
+	e := server.ReadDHE()
+
 	// g = p - 1
 	g := new(big.Int).Sub(e.Group.P, big.NewInt(1))
 
@@ -234,7 +232,7 @@ func EveGEqualsPMinus1(listen, dest string) {
 	client := &DHClient{"EveClient", clientConn, clientSession}
 	client.Send(e)
 
-	_ = client.ReadMessage(DHE_MSG_EXCHANGE)
+	_ = client.ReadDHE()
 	// Use 0 as the Public Key to generate a session key of 0
 	clientSession.GenerateSessionKeys(big.NewInt(1))
 
