@@ -18,8 +18,9 @@ type DHExchange struct {
 }
 
 type DHClient struct {
-	Name    string
-	conn    *TCPClient
+	Name string
+	// Embed the TCPClient
+	*TCPClient
 	session *DHSession
 }
 
@@ -32,13 +33,13 @@ func NewDHClient(name string, conn net.Conn, session *DHSession) *DHClient {
 }
 
 func (c *DHClient) ReadDHE() DHExchange {
-	bob := c.conn.ReadMessage(TCP_DHE)
+	bob := c.ReadMessage(TCP_DHE)
 	return bob.(DHExchange)
 }
 
 func (c *DHClient) ReadEncrypted() ([]byte, error) {
 	key := c.session.sha1SessionKey[:KEYSIZE]
-	m := c.conn.ReadMessage(TCP_BYTES)
+	m := c.ReadMessage(TCP_BYTES)
 	blob := m.([]byte)
 	cipher, iv := blob[:len(blob)-KEYSIZE], blob[len(blob)-KEYSIZE:]
 
@@ -60,6 +61,6 @@ func (c *DHClient) SendEncrypted(b []byte) error {
 	if err != nil {
 		return err
 	}
-	c.conn.Send(append(cipher, iv...))
+	c.Send(append(cipher, iv...))
 	return nil
 }
