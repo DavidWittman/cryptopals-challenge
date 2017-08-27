@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	TCP_DHE   = 0x1
-	TCP_BYTES = 0x2
+	TCP_DHE          = 0x1
+	TCP_BYTES        = 0x2
+	TCP_SRP_EXCHANGE = 0x3
 )
 
 type TCPClient struct {
@@ -51,6 +52,14 @@ func (c *TCPClient) ReadMessage(kind byte) interface{} {
 	switch kind {
 	case TCP_DHE:
 		var decoded DHExchange
+		err := decoder.Decode(&decoded)
+		if err != nil {
+			panic(err)
+		}
+		return decoded
+
+	case TCP_SRP_EXCHANGE:
+		var decoded SRPExchange
 		err := decoder.Decode(&decoded)
 		if err != nil {
 			panic(err)
