@@ -7,7 +7,8 @@ import (
 
 func TestSRP(t *testing.T) {
 	addr := "localhost:3333"
-	go StartServer(SRPServer, addr)
+	server := &SRPServer{}
+	go StartServer(server.Handler, addr)
 	// Sleep for a bit to allow time for server to start
 	time.Sleep(250 * time.Millisecond)
 
@@ -24,7 +25,8 @@ func TestSRP(t *testing.T) {
 
 func TestSRPWrongPassword(t *testing.T) {
 	addr := "localhost:3334"
-	go StartServer(SRPServer, addr)
+	server := &SRPServer{}
+	go StartServer(server.Handler, addr)
 	// Sleep for a bit to allow time for server to start
 	time.Sleep(250 * time.Millisecond)
 

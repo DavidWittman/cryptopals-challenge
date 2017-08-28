@@ -50,9 +50,13 @@
 package set_five
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"log"
 	"math/big"
 	"net"
+
+	"github.com/DavidWittman/cryptopals-challenge/cryptopals"
 )
 
 const (
@@ -95,10 +99,32 @@ func (c *SRPClient) Login(password string) bool {
 	return false
 }
 
-func SRPServer(conn net.Conn) error {
-	tcp := &TCPClient{conn}
-	e := tcp.ReadMessage(TCP_SRP_EXCHANGE)
+type SRPServer struct {
+	v, x *big.Int
+	*TCPClient
+}
+
+func HashAndSalt(text string) [sha256.Size]byte {
+	salt := cryptopals.RANDOM_KEY
+	return sha256.Sum256(append(salt, []byte(text)...))
+}
+
+func SHA256ToBigInt(sum [sha256.Size]byte) *big.Int {
+	i, _ := binary.Varint(sum[:])
+	// NB: Take the absolute value so we don't do negative exponentiation
+	return new(big.Int).Abs(big.NewInt(i))
+}
+
+func (s *SRPServer) Handler(conn net.Conn) error {
+	s.TCPClient = &TCPClient{conn}
+	e := s.ReadMessage(TCP_SRP_EXCHANGE)
 	exchange := e.(SRPExchange)
-	log.Println("exchange:", exchange)
+
+	xH := HashAndSalt(PASSWORD)
+	s.x = SHA256ToBigInt(xH)
+
+	s.v = new(big.Int).Exp(exchange.G, s.x, exchange.N)
+	log.Println(s.v)
+
 	return nil
 }
