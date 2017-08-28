@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	TCP_DHE          = 0x1
-	TCP_BYTES        = 0x2
-	TCP_SRP_EXCHANGE = 0x3
+	TCP_DHE            = 0x1
+	TCP_BYTES          = 0x2
+	TCP_SRP_LOGIN      = 0x3
+	TCP_SRP_LOGIN_RESP = 0x4
 )
 
 type TCPClient struct {
@@ -58,8 +59,16 @@ func (c *TCPClient) ReadMessage(kind byte) interface{} {
 		}
 		return decoded
 
-	case TCP_SRP_EXCHANGE:
-		var decoded SRPExchange
+	case TCP_SRP_LOGIN:
+		var decoded SRPLogin
+		err := decoder.Decode(&decoded)
+		if err != nil {
+			panic(err)
+		}
+		return decoded
+
+	case TCP_SRP_LOGIN_RESP:
+		var decoded SRPLoginResponse
 		err := decoder.Decode(&decoded)
 		if err != nil {
 			panic(err)

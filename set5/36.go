@@ -62,7 +62,18 @@ import (
 const (
 	EMAIL    = "whitfield@example.com"
 	PASSWORD = "password123"
+	k        = 3
 )
+
+type SRPLogin struct {
+	Email string
+	A     *big.Int
+}
+
+type SRPLoginResponse struct {
+	Salt []byte
+	B    *big.Int
+}
 
 type SRPExchange struct {
 	N, G, K  *big.Int
@@ -71,6 +82,7 @@ type SRPExchange struct {
 }
 
 type SRPClient struct {
+	a *big.Int
 	// Embed the TCPClient
 	*TCPClient
 }
@@ -80,51 +92,72 @@ func NewSRPClient(addr string) (*SRPClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := &SRPClient{&TCPClient{conn}}
 
-	n, g, _ := GetNISTParams()
-	exchange := &SRPExchange{
-		N:        n,
-		G:        g,
-		K:        big.NewInt(3),
-		Email:    EMAIL,
-		Password: PASSWORD,
-	}
-	client.Send(exchange)
+	// Generate a = RANDOM % p
+	p, _, _ := GetNISTParams()
+	random := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
+	a := new(big.Int).Mod(random, p)
 
+	client := &SRPClient{a, &TCPClient{conn}}
 	return client, nil
 }
 
 func (c *SRPClient) Login(password string) bool {
+	n, g, _ := GetNISTParams()
+
+	c.Send(&SRPLogin{
+		Email: EMAIL,
+		A:     new(big.Int).Exp(g, c.a, n),
+	})
+
+	r := c.ReadMessage(TCP_SRP_LOGIN_RESP)
+	resp := r.(SRPLoginResponse)
+
+	log.Println(resp)
+
 	return false
 }
 
 type SRPServer struct {
-	v, x *big.Int
+	v *big.Int
 	*TCPClient
 }
 
-func HashAndSalt(text string) [sha256.Size]byte {
+func SaltAndHash(text string) []byte {
 	salt := cryptopals.RANDOM_KEY
-	return sha256.Sum256(append(salt, []byte(text)...))
+	sum := sha256.Sum256(append(salt, []byte(text)...))
+	return sum[:]
 }
 
-func SHA256ToBigInt(sum [sha256.Size]byte) *big.Int {
-	i, _ := binary.Varint(sum[:])
+func SHA256ToBigInt(sum []byte) *big.Int {
+	i, _ := binary.Varint(sum)
 	// NB: Take the absolute value so we don't do negative exponentiation
 	return new(big.Int).Abs(big.NewInt(i))
 }
 
 func (s *SRPServer) Handler(conn net.Conn) error {
 	s.TCPClient = &TCPClient{conn}
-	e := s.ReadMessage(TCP_SRP_EXCHANGE)
-	exchange := e.(SRPExchange)
 
-	xH := HashAndSalt(PASSWORD)
-	s.x = SHA256ToBigInt(xH)
+	xH := SaltAndHash(PASSWORD)
+	x := SHA256ToBigInt(xH)
 
-	s.v = new(big.Int).Exp(exchange.G, s.x, exchange.N)
-	log.Println(s.v)
+	// Generate v
+	n, g, _ := GetNISTParams()
+	s.v = new(big.Int).Exp(g, x, n)
+
+	l := s.ReadMessage(TCP_SRP_LOGIN)
+	// TODO(dw): Need login details later
+	_ = l.(SRPLogin)
+
+	// Generate b = RANDOM % p (p == n here)
+	random := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
+	b := new(big.Int).Mod(random, n)
+
+	// Generate B = kv + g**b % N
+	kv := new(big.Int).Mul(big.NewInt(k), s.v)
+	B := new(big.Int).Add(kv, new(big.Int).Exp(g, b, n))
+
+	s.Send(&SRPLoginResponse{cryptopals.RANDOM_KEY, B})
 
 	return nil
 }
