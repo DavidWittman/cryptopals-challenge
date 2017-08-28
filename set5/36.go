@@ -48,3 +48,57 @@
  */
 
 package set_five
+
+import (
+	"log"
+	"math/big"
+	"net"
+)
+
+const (
+	EMAIL    = "whitfield@example.com"
+	PASSWORD = "password123"
+)
+
+type SRPExchange struct {
+	N, G, K  *big.Int
+	Email    string
+	Password string
+}
+
+type SRPClient struct {
+	// Embed the TCPClient
+	*TCPClient
+}
+
+func NewSRPClient(addr string) (*SRPClient, error) {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return nil, err
+	}
+	client := &SRPClient{&TCPClient{conn}}
+
+	n, g, _ := GetNISTParams()
+	exchange := &SRPExchange{
+		N:        n,
+		G:        g,
+		K:        big.NewInt(3),
+		Email:    EMAIL,
+		Password: PASSWORD,
+	}
+	client.Send(exchange)
+
+	return client, nil
+}
+
+func (c *SRPClient) Login(password string) bool {
+	return false
+}
+
+func SRPServer(conn net.Conn) error {
+	tcp := &TCPClient{conn}
+	e := tcp.ReadMessage(TCP_SRP_EXCHANGE)
+	exchange := e.(SRPExchange)
+	log.Println("exchange:", exchange)
+	return nil
+}
