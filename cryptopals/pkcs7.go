@@ -6,8 +6,6 @@ import (
 )
 
 func PKCS7Pad(padLength int, block []byte) []byte {
-	var result []byte
-
 	if padLength <= 1 || padLength >= 256 {
 		panic("9: bad pad length")
 	}
