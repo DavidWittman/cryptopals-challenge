@@ -114,7 +114,7 @@ func (c *SRPClient) Login(password string) bool {
 	u := SHA256ToBigInt(uH[:])
 
 	// Generate string xH=SHA256(salt|password)
-	xH := SaltAndHash(PASSWORD)
+	xH := SaltAndHash(password)
 	x := SHA256ToBigInt(xH)
 
 	// Generate S = (B - k * g**x)**(a + u * x) % N
