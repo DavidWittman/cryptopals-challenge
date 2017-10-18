@@ -10,14 +10,14 @@ func TestSRP(t *testing.T) {
 	server := &SRPServer{}
 	go StartServer(server.Handler, addr)
 	// Sleep for a bit to allow time for server to start
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	client, err := NewSRPClient(addr)
 	if err != nil {
 		t.Error(err)
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(time.Second)
 	if success := client.Login(PASSWORD); !success {
 		t.Errorf("Error logging in with password: %s", PASSWORD)
 	}

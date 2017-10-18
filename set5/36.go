@@ -50,9 +50,9 @@
 package set_five
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/binary"
-	"log"
 	"math/big"
 	"net"
 
@@ -99,15 +99,41 @@ func NewSRPClient(addr string) (*SRPClient, error) {
 func (c *SRPClient) Login(password string) bool {
 	n, g, _ := GetNISTParams()
 
+	A := new(big.Int).Exp(g, c.a, n)
+
 	c.Send(&SRPLogin{
 		Email: EMAIL,
-		A:     new(big.Int).Exp(g, c.a, n),
+		A:     A,
 	})
 
 	r := c.ReadMessage(TCP_SRP_LOGIN_RESP)
 	resp := r.(SRPLoginResponse)
 
-	log.Println(resp)
+	// Compute string uH = SHA256(A|B), u = integer of uH
+	uH := sha256.Sum256(append(A.Bytes(), resp.B.Bytes()...))
+	u := SHA256ToBigInt(uH[:])
+
+	// Generate string xH=SHA256(salt|password)
+	xH := SaltAndHash(PASSWORD)
+	x := SHA256ToBigInt(xH)
+
+	// Generate S = (B - k * g**x)**(a + u * x) % N
+	gx := new(big.Int).Exp(g, x, nil)
+	aux := new(big.Int).Add(c.a, new(big.Int).Mul(u, x))
+	S := new(big.Int).Exp(new(big.Int).Sub(resp.B, new(big.Int).Mul(big.NewInt(k), gx)), aux, n)
+	K := sha256.Sum256(S.Bytes())
+
+	// Generate HMAC(K, salt) and send to S
+	mac := hmac.New(sha256.New, K[:])
+	mac.Write(cryptopals.RANDOM_KEY)
+	c.Send(mac.Sum(nil))
+
+	okResp := c.ReadMessage(TCP_BYTES)
+	ok := okResp.([]byte)
+
+	if string(ok) == "OK" {
+		return true
+	}
 
 	return false
 }
@@ -141,7 +167,7 @@ func (s *SRPServer) Handler(conn net.Conn) error {
 
 	l := s.ReadMessage(TCP_SRP_LOGIN)
 	// TODO(dw): Need login details later
-	_ = l.(SRPLogin)
+	login := l.(SRPLogin)
 
 	// Generate b = RANDOM % p (p == n here)
 	random := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
@@ -152,6 +178,27 @@ func (s *SRPServer) Handler(conn net.Conn) error {
 	B := new(big.Int).Add(kv, new(big.Int).Exp(g, b, n))
 
 	s.Send(&SRPLoginResponse{cryptopals.RANDOM_KEY, B})
+
+	// Compute string uH = SHA256(A|B), u = integer of uH
+	uH := sha256.Sum256(append(login.A.Bytes(), B.Bytes()...))
+	u := SHA256ToBigInt(uH[:])
+
+	// Generate S = (A * v**u) ** b % N
+	S := new(big.Int).Exp(new(big.Int).Mul(login.A, new(big.Int).Exp(s.v, u, nil)), b, n)
+	K := sha256.Sum256(S.Bytes())
+
+	mac := hmac.New(sha256.New, K[:])
+	mac.Write(cryptopals.RANDOM_KEY)
+	expectedMAC := mac.Sum(nil)
+
+	challengeMsg := s.ReadMessage(TCP_BYTES)
+	challenge := challengeMsg.([]byte)
+
+	if hmac.Equal(expectedMAC, challenge) {
+		s.Send([]byte("OK"))
+	} else {
+		s.Send([]byte("FAIL"))
+	}
 
 	return nil
 }
