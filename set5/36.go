@@ -75,12 +75,6 @@ type SRPLoginResponse struct {
 	B    *big.Int
 }
 
-type SRPExchange struct {
-	N, G, K  *big.Int
-	Email    string
-	Password string
-}
-
 type SRPClient struct {
 	a *big.Int
 	// Embed the TCPClient
