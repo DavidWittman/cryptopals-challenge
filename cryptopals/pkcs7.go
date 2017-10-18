@@ -18,9 +18,7 @@ func PKCS7Pad(padLength int, block []byte) []byte {
 
 	// This syntax is strange here, but it expands the byte slice returned
 	// from bytes.Repeat into individual byte arguments, as required by `append`.
-	result = append(block, bytes.Repeat(pad, remainder)...)
-
-	return result
+	return append(block, bytes.Repeat(pad, remainder)...)
 }
 
 func PKCS7Unpad(data []byte) ([]byte, error) {
