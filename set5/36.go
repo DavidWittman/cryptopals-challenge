@@ -53,6 +53,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/binary"
+	"log"
 	"math/big"
 	"net"
 
@@ -185,6 +186,7 @@ func (s *SRPServer) Handler(conn net.Conn) error {
 
 	// Generate S = (A * v**u) ** b % N
 	S := new(big.Int).Exp(new(big.Int).Mul(login.A, new(big.Int).Exp(s.v, u, nil)), b, n)
+	log.Printf("Server S: %v", S)
 	K := sha256.Sum256(S.Bytes())
 
 	mac := hmac.New(sha256.New, K[:])
