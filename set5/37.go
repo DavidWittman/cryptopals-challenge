@@ -31,28 +31,16 @@ import (
 )
 
 func (c *SRPClient) MaliciousLogin(password string, A *big.Int) bool {
-	n, g, _ := GetNISTParams()
-
 	c.Send(&SRPLogin{
 		Email: EMAIL,
 		A:     A,
 	})
 
 	r := c.ReadMessage(TCP_SRP_LOGIN_RESP)
-	resp := r.(SRPLoginResponse)
+	_ = r.(SRPLoginResponse)
 
-	// Compute string uH = SHA256(A|B), u = integer of uH
-	uH := sha256.Sum256(append(A.Bytes(), resp.B.Bytes()...))
-	u := SHA256ToBigInt(uH[:])
-
-	// Generate string xH=SHA256(salt|password)
-	xH := SaltAndHash(password)
-	x := SHA256ToBigInt(xH)
-
-	// Generate S = (B - k * g**x)**(a + u * x) % N
-	gx := new(big.Int).Exp(g, x, nil)
-	aux := new(big.Int).Add(c.a, new(big.Int).Mul(u, x))
-	S := new(big.Int).Exp(new(big.Int).Sub(resp.B, new(big.Int).Mul(big.NewInt(k), gx)), aux, n)
+	// Skip all that mumbo-jumbo and just set S = 0
+	S := big.NewInt(0)
 	log.Printf("Client S: %v", S)
 	K := sha256.Sum256(S.Bytes())
 

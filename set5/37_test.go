@@ -18,8 +18,9 @@ func TestSRPLoginAEquals0(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(2 * time.Second)
-	_ = client.MaliciousLogin("", big.NewInt(0))
+	if success := client.MaliciousLogin("", big.NewInt(0)); !success {
+		t.Errorf("Malicious login failed!")
+	}
 }
 
 func TestSRPLoginAEqualsN(t *testing.T) {
@@ -34,11 +35,11 @@ func TestSRPLoginAEqualsN(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(2 * time.Second)
-
 	n, _, _ := GetNISTParams()
 
-	_ = client.MaliciousLogin("", n)
+	if success := client.MaliciousLogin("", n); !success {
+		t.Errorf("Malicious login failed!")
+	}
 }
 
 func TestSRPLoginAEquals2N(t *testing.T) {
@@ -53,15 +54,15 @@ func TestSRPLoginAEquals2N(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(2 * time.Second)
-
 	n, _, _ := GetNISTParams()
 
-	_ = client.MaliciousLogin("", new(big.Int).Mul(n, big.NewInt(2)))
+	if success := client.MaliciousLogin("", new(big.Int).Mul(n, big.NewInt(2))); !success {
+		t.Errorf("Malicious login failed!")
+	}
 }
 
 func TestSRPLoginAEquals3N(t *testing.T) {
-	addr := "localhost:3337"
+	addr := "localhost:3338"
 	server := &SRPServer{}
 	go StartServer(server.Handler, addr)
 	// Sleep for a bit to allow time for server to start
@@ -72,9 +73,9 @@ func TestSRPLoginAEquals3N(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(2 * time.Second)
-
 	n, _, _ := GetNISTParams()
 
-	_ = client.MaliciousLogin("", new(big.Int).Mul(n, big.NewInt(3)))
+	if success := client.MaliciousLogin("", new(big.Int).Mul(n, big.NewInt(3))); !success {
+		t.Errorf("Malicious login failed!")
+	}
 }

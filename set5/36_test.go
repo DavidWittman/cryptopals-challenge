@@ -17,7 +17,6 @@ func TestSRP(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(time.Second)
 	if success := client.Login(PASSWORD); !success {
 		t.Errorf("Error logging in with password: %s", PASSWORD)
 	}
@@ -35,7 +34,6 @@ func TestSRPWrongPassword(t *testing.T) {
 		t.Error(err)
 	}
 
-	time.Sleep(time.Second)
 	if success := client.Login("wrongpassword"); success {
 		t.Errorf("Logged in with incorrect password!")
 	}

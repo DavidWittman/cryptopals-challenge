@@ -119,7 +119,7 @@ func (c *SRPClient) Login(password string) bool {
 	x := SHA256ToBigInt(xH)
 
 	// Generate S = (B - k * g**x)**(a + u * x) % N
-	gx := new(big.Int).Exp(g, x, nil)
+	gx := new(big.Int).Exp(g, x, n)
 	aux := new(big.Int).Add(c.a, new(big.Int).Mul(u, x))
 	S := new(big.Int).Exp(new(big.Int).Sub(resp.B, new(big.Int).Mul(big.NewInt(k), gx)), aux, n)
 	K := sha256.Sum256(S.Bytes())
@@ -167,7 +167,6 @@ func (s *SRPServer) Handler(conn net.Conn) error {
 	s.v = new(big.Int).Exp(g, x, n)
 
 	l := s.ReadMessage(TCP_SRP_LOGIN)
-	// TODO(dw): Need login details later
 	login := l.(SRPLogin)
 
 	// Generate b = RANDOM % p (p == n here)
@@ -185,7 +184,8 @@ func (s *SRPServer) Handler(conn net.Conn) error {
 	u := SHA256ToBigInt(uH[:])
 
 	// Generate S = (A * v**u) ** b % N
-	S := new(big.Int).Exp(new(big.Int).Mul(login.A, new(big.Int).Exp(s.v, u, nil)), b, n)
+	vu := new(big.Int).Exp(s.v, u, n)
+	S := new(big.Int).Exp(new(big.Int).Mul(login.A, vu), b, n)
 	log.Printf("Server S: %v", S)
 	K := sha256.Sum256(S.Bytes())
 
