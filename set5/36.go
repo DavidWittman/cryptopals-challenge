@@ -11,7 +11,7 @@
  * S
  *     1. Generate salt as random integer
  *     2. Generate string xH=SHA256(salt|password)
- * 	   3. Convert xH to integer x somehow (put 0x on hexdigest)
+ *     3. Convert xH to integer x somehow (put 0x on hexdigest)
  *     4. Generate v=g**x % N
  *     5. Save everything but x, xH
  * C->S
