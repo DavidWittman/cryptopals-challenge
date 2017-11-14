@@ -36,6 +36,10 @@
  *
  * Crack the password from A's HMAC-SHA256(K, salt).
  *
+ * NOTE(dw): The reason we can brute force the client's hash here and not in
+ *           Challenge 36 is because B (and therefore the MAC we receive from
+ *           the client is based on the password. So we would need to pass the
+ *           correct password in B in order to ever brute force the hash.
  */
 
 package set_five
@@ -138,4 +142,71 @@ func (s *SRPServer) SimpleHandler(conn net.Conn) error {
 	}
 
 	return nil
+}
+
+func (s *SRPServer) SimpleHandlerMITM(conn net.Conn) error {
+	s.TCPClient = &TCPClient{conn}
+
+	// We don't know the password, so just salt nothing
+	xH := SaltAndHash("")
+	x := SHA256ToBigInt(xH)
+
+	// Generate v
+	n, g, _ := GetNISTParams()
+	s.v = new(big.Int).Exp(g, x, n)
+
+	l := s.ReadMessage(TCP_SRP_LOGIN)
+	login := l.(SRPLogin)
+
+	// Generate b = RANDOM % p (p == n here)
+	random := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
+	b := new(big.Int).Mod(random, n)
+
+	// Generate B = g**b % n
+	B := new(big.Int).Exp(g, b, n)
+
+	// u = 128 bit random number
+	u := big.NewInt(int64(cryptopals.RandomInt(1, DH_MAX_RANDOM)))
+	resp := &SimpleSRPLoginResponse{cryptopals.RANDOM_KEY, B, u}
+	s.Send(resp)
+
+	// Read MAC from the client and brute force it
+	challengeMsg := s.ReadMessage(TCP_BYTES)
+	challenge := challengeMsg.([]byte)
+
+	// TODO: I hate having to pass all these params, maybe they should be in the struct
+	s.Crack(challenge, login.A, b, resp)
+	// We don't care about checking the password; just respond with OK
+	s.Send([]byte("OK"))
+
+	return nil
+}
+
+func (s *SRPServer) Crack(challenge []byte, A *big.Int, b *big.Int, resp *SimpleSRPLoginResponse) {
+	var wordlist []string = []string{"password", "123456", "office2005", "password123", "dinero"}
+	n, _, _ := GetNISTParams()
+	for _, word := range wordlist {
+		xH := SaltAndHash(word)
+		x := SHA256ToBigInt(xH)
+
+		// Generate S = B**(a + ux) % n
+		// Only, we don't know `a`, but we can expand this equation and make it:
+		//     S = (B**a) * (B**ux)
+		// And then substitute A**b (which we know) for B**a, a la DHE
+		//     S = (A**b) * (B**ux)
+		S := new(big.Int).Exp(A, b, n)
+		Bux := new(big.Int).Exp(resp.B, new(big.Int).Mul(resp.U, x), n)
+		S.Mul(S, Bux)
+		K := sha256.Sum256(S.Bytes())
+
+		// Generate HMAC(K, salt)
+		mac := hmac.New(sha256.New, K[:])
+		mac.Write(resp.Salt)
+		guess := mac.Sum(nil)
+
+		if hmac.Equal(challenge, guess) {
+			log.Printf("Password found: %s", word)
+			break
+		}
+	}
 }

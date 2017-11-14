@@ -38,3 +38,16 @@ func TestSimpleSRPWrongPassword(t *testing.T) {
 		t.Errorf("Logged in with incorrect password!")
 	}
 }
+
+func TestSimpleSRPMITM(t *testing.T) {
+	addr := "localhost:3341"
+	server := &SRPServer{}
+	go StartServer(server.SimpleHandlerMITM, addr)
+	// Sleep for a bit to allow time for server to start
+	time.Sleep(500 * time.Millisecond)
+
+	_, err := NewSRPClient(addr)
+	if err != nil {
+		t.Error(err)
+	}
+}
