@@ -197,7 +197,7 @@ func (s *SRPServer) Crack(challenge []byte, A *big.Int, b *big.Int, resp *Simple
 		//     S = (A**b) * (B**ux)
 		S := new(big.Int).Exp(A, b, n)
 		Bux := new(big.Int).Exp(resp.B, new(big.Int).Mul(resp.U, x), n)
-		S.Mul(S, Bux)
+		S.Mul(S, Bux).Mod(S, n)
 		K := sha256.Sum256(S.Bytes())
 
 		// Generate HMAC(K, salt)
