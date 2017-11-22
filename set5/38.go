@@ -174,6 +174,7 @@ func (s *SRPServer) SimpleHandlerMITM(conn net.Conn) error {
 	challengeMsg := s.ReadMessage(TCP_BYTES)
 	challenge := challengeMsg.([]byte)
 
+	log.Printf("Attempting to crack password")
 	// TODO: I hate having to pass all these params, maybe they should be in the struct
 	s.Crack(challenge, login.A, b, resp)
 	// We don't care about checking the password; just respond with OK
