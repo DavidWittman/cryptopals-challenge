@@ -35,3 +35,40 @@
  */
 
 package set_five
+
+import (
+	"crypto/rand"
+	"crypto/rsa"
+	"math/big"
+)
+
+const (
+	PRIME_BITS = 1024
+	e          = 3
+)
+
+func GenerateRSA() (*rsa.PrivateKey, error) {
+	p, err := rand.Prime(rand.Reader, PRIME_BITS)
+	if err != nil {
+		return &rsa.PrivateKey{}, err
+	}
+	q, err := rand.Prime(rand.Reader, PRIME_BITS)
+	if err != nil {
+		return &rsa.PrivateKey{}, err
+	}
+	n := new(big.Int).Mul(p, q)
+
+	et := p.Sub(p, big.NewInt(1))
+	et = et.Mul(et, new(big.Int).Sub(q, big.NewInt(1)))
+	et = et.Mod(et, n)
+	// TODO(dw): Pretty sure this is broken since it's returning 1 :(
+	d := et.ModInverse(big.NewInt(e), et)
+
+	key := &rsa.PrivateKey{
+		PublicKey: rsa.PublicKey{n, e},
+		D:         d,
+		Primes:    []*big.Int{p, q},
+	}
+
+	return key, nil
+}
