@@ -47,27 +47,33 @@ const (
 	e          = 3
 )
 
-func GenerateRSA() (*rsa.PrivateKey, error) {
-	p, err := rand.Prime(rand.Reader, PRIME_BITS)
-	if err != nil {
-		return &rsa.PrivateKey{}, err
-	}
-	q, err := rand.Prime(rand.Reader, PRIME_BITS)
-	if err != nil {
-		return &rsa.PrivateKey{}, err
-	}
-	n := new(big.Int).Mul(p, q)
+var big1 = big.NewInt(1)
 
-	et := p.Sub(p, big.NewInt(1))
-	et = et.Mul(et, new(big.Int).Sub(q, big.NewInt(1)))
-	et = et.Mod(et, n)
-	// TODO(dw): Pretty sure this is broken since it's returning 1 :(
-	d := et.ModInverse(big.NewInt(e), et)
+func RSAGenerate() (*rsa.PrivateKey, error) {
+	key := &rsa.PrivateKey{}
+	key.E = e
 
-	key := &rsa.PrivateKey{
-		PublicKey: rsa.PublicKey{n, e},
-		D:         d,
-		Primes:    []*big.Int{p, q},
+	// Sometimes D = 1 during key generation, so loop until
+	// we generate a valid private key.
+	for {
+		p, err := rand.Prime(rand.Reader, PRIME_BITS)
+		if err != nil {
+			return &rsa.PrivateKey{}, err
+		}
+		q, err := rand.Prime(rand.Reader, PRIME_BITS)
+		if err != nil {
+			return &rsa.PrivateKey{}, err
+		}
+		key.Primes = []*big.Int{p, q}
+		key.N = new(big.Int).Mul(p, q)
+
+		et := new(big.Int).Sub(p, big1)
+		et.Mul(et, new(big.Int).Sub(q, big1))
+		key.D = new(big.Int).ModInverse(big.NewInt(e), et)
+
+		if key.D.Cmp(big1) > 0 {
+			break
+		}
 	}
 
 	return key, nil
