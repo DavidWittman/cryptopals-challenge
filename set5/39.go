@@ -78,3 +78,13 @@ func RSAGenerate() (*rsa.PrivateKey, error) {
 
 	return key, nil
 }
+
+func RSAEncrypt(m []byte, pub *rsa.PublicKey) []byte {
+	M := new(big.Int).SetBytes(m)
+	return new(big.Int).Exp(M, big.NewInt(int64(pub.E)), pub.N).Bytes()
+}
+
+func RSADecrypt(c []byte, priv *rsa.PrivateKey) []byte {
+	C := new(big.Int).SetBytes(c)
+	return new(big.Int).Exp(C, priv.D, priv.N).Bytes()
+}
