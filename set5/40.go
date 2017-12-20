@@ -39,3 +39,52 @@
  */
 
 package set_five
+
+import "crypto/rsa"
+
+type KeyAndCipher struct {
+	Key    *rsa.PublicKey
+	Cipher []byte
+}
+
+func CRT(data [3]KeyAndCipher) *big.Int {
+	result := big.NewInt(1)
+	N = new(big.Int).Mul(data[0].N, data[1].N)
+	N.Mul(data[2].N)
+
+	result.Mul(result, new(big.Int).SetBytes(keys[0].Cipher))
+	result.Mul(result, new(big.Int).Div(N, keys[0].N))
+	result.Mul(result, new(big.Int).ModInverse(new(big.Int).Div(N, keys[0].N), keys[0].N))
+
+	result1 := big.NewInt(1)
+	result1.Mul(result1, new(big.Int).SetBytes(keys[1].Cipher))
+	result1.Mul(result1, new(big.Int).Div(N, keys[1].N))
+	result1.Mul(result1, new(big.Int).ModInverse(new(big.Int).Div(N, keys[1].N), keys[0].N))
+
+	result2 := big.NewInt(1)
+	result2.Mul(result2, new(big.Int).SetBytes(keys[2].Cipher))
+	result2.Mul(result2, new(big.Int).Div(N, keys[2].N))
+	result2.Mul(result2, new(big.Int).ModInverse(new(big.Int).Div(N, keys[2].N), keys[0].N))
+
+	result.Add(result, result1)
+	result.Add(result, result2)
+
+	return result.Mod(result, N)
+}
+
+func BroadcastRSA(plaintext []byte) [3]KeyAndCipher {
+	var result [3]KeyAndCipher
+
+	for i := 0; i < 3; i++ {
+		key, err := RSAGenerate()
+		if err != nil {
+			panic(err)
+		}
+		result[i] = KeyAndCipher{
+			Key:    key.PublicKey,
+			Cipher: RSAEncrypt(plaintext, key.PublicKey),
+		}
+	}
+
+	return result
+}
