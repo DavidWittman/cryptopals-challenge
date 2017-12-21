@@ -38,38 +38,42 @@
  *
  */
 
+/*
+ * Notes:
+ *  - n values are just the modulus portion of the public key
+ *  - c_0, c_1, and c_2 are just the ciphertexts, i don't know why they are
+ *    referred to as "residues mod [their respective n]"
+ */
+
 package set_five
 
-import "crypto/rsa"
+import (
+	"crypto/rsa"
+	"math/big"
+)
 
 type KeyAndCipher struct {
 	Key    *rsa.PublicKey
 	Cipher []byte
 }
 
-func CRT(data [3]KeyAndCipher) *big.Int {
-	result := big.NewInt(1)
-	N = new(big.Int).Mul(data[0].N, data[1].N)
-	N.Mul(data[2].N)
+var big3 = big.NewInt(3)
 
-	result.Mul(result, new(big.Int).SetBytes(keys[0].Cipher))
-	result.Mul(result, new(big.Int).Div(N, keys[0].N))
-	result.Mul(result, new(big.Int).ModInverse(new(big.Int).Div(N, keys[0].N), keys[0].N))
+func CRTAttack(keys [3]KeyAndCipher) []byte {
+	result := big.NewInt(0)
 
-	result1 := big.NewInt(1)
-	result1.Mul(result1, new(big.Int).SetBytes(keys[1].Cipher))
-	result1.Mul(result1, new(big.Int).Div(N, keys[1].N))
-	result1.Mul(result1, new(big.Int).ModInverse(new(big.Int).Div(N, keys[1].N), keys[0].N))
+	N := new(big.Int).Mul(keys[0].Key.N, keys[1].Key.N)
+	N.Mul(N, keys[2].Key.N)
 
-	result2 := big.NewInt(1)
-	result2.Mul(result2, new(big.Int).SetBytes(keys[2].Cipher))
-	result2.Mul(result2, new(big.Int).Div(N, keys[2].N))
-	result2.Mul(result2, new(big.Int).ModInverse(new(big.Int).Div(N, keys[2].N), keys[0].N))
+	for _, key := range keys {
+		product := big.NewInt(1)
+		product.Mul(product, new(big.Int).SetBytes(key.Cipher))
+		product.Mul(product, new(big.Int).Div(N, key.Key.N))
+		product.Mul(product, new(big.Int).ModInverse(new(big.Int).Div(N, key.Key.N), key.Key.N))
+		result.Add(result, product)
+	}
 
-	result.Add(result, result1)
-	result.Add(result, result2)
-
-	return result.Mod(result, N)
+	return cubeRoot(result.Mod(result, N)).Bytes()
 }
 
 func BroadcastRSA(plaintext []byte) [3]KeyAndCipher {
@@ -81,10 +85,40 @@ func BroadcastRSA(plaintext []byte) [3]KeyAndCipher {
 			panic(err)
 		}
 		result[i] = KeyAndCipher{
-			Key:    key.PublicKey,
-			Cipher: RSAEncrypt(plaintext, key.PublicKey),
+			Key:    &key.PublicKey,
+			Cipher: RSAEncrypt(plaintext, &key.PublicKey),
 		}
 	}
 
 	return result
+}
+
+// Thanks Fillipo!
+func cubeRoot(cube *big.Int) *big.Int {
+	x := new(big.Int).Rsh(cube, uint(cube.BitLen())/3*2)
+	if x.Sign() == 0 {
+		panic("can't start from 0")
+	}
+	for {
+		d := new(big.Int).Exp(x, big3, nil)
+		d.Sub(d, cube)
+		d.Div(d, big3)
+		d.Div(d, x)
+		d.Div(d, x)
+		if d.Sign() == 0 {
+			break
+		}
+		x.Sub(x, d)
+	}
+	for new(big.Int).Exp(x, big3, nil).Cmp(cube) < 0 {
+		x.Add(x, big1)
+	}
+	for new(big.Int).Exp(x, big3, nil).Cmp(cube) > 0 {
+		x.Sub(x, big1)
+	}
+	// Return the cube, rounded down.
+	// if new(big.Int).Exp(x, big3, nil).Cmp(cube) != 0 {
+	// 	panic("not a cube")
+	// }
+	return x
 }
