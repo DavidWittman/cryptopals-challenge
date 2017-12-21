@@ -57,8 +57,6 @@ type KeyAndCipher struct {
 	Cipher []byte
 }
 
-var big3 = big.NewInt(3)
-
 func CRTAttack(keys [3]KeyAndCipher) []byte {
 	result := big.NewInt(0)
 
@@ -93,8 +91,10 @@ func BroadcastRSA(plaintext []byte) [3]KeyAndCipher {
 	return result
 }
 
-// Thanks Fillipo!
+// Thanks Filippo!
 func cubeRoot(cube *big.Int) *big.Int {
+	var big3 = big.NewInt(3)
+
 	x := new(big.Int).Rsh(cube, uint(cube.BitLen())/3*2)
 	if x.Sign() == 0 {
 		panic("can't start from 0")
