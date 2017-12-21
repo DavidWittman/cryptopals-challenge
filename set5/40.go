@@ -43,6 +43,10 @@
  *  - n values are just the modulus portion of the public key
  *  - c_0, c_1, and c_2 are just the ciphertexts, i don't know why they are
  *    referred to as "residues mod [their respective n]"
+ *  - There's a really good description of this here:
+ *
+ *  https://rdist.root.org/2009/10/06/why-rsa-encryption-padding-is-critical/
+ *
  */
 
 package set_five
