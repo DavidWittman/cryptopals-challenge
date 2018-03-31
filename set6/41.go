@@ -92,3 +92,7 @@ func (r *RSAOracle) Decrypt(blob []byte) ([]byte, error) {
 
 	return set_five.RSADecrypt(blob, r.privateKey), nil
 }
+
+func RecoverMessage(cipher []byte, r *RSAOracle) []byte {
+	return []byte{}
+}
