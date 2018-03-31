@@ -56,6 +56,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"fmt"
+	"math/big"
 
 	"github.com/DavidWittman/cryptopals-challenge/set5"
 )
@@ -93,6 +94,32 @@ func (r *RSAOracle) Decrypt(blob []byte) ([]byte, error) {
 	return set_five.RSADecrypt(blob, r.privateKey), nil
 }
 
+func (r *RSAOracle) GetPublicKey() *rsa.PublicKey {
+	return &r.privateKey.PublicKey
+}
+
 func RecoverMessage(cipher []byte, r *RSAOracle) []byte {
-	return []byte{}
+	pub := r.GetPublicKey()
+	// Cipher as bigint
+	c := new(big.Int).SetBytes(cipher)
+
+	// "Random" number
+	s := big.NewInt(42)
+	// S**E mod N
+	S := new(big.Int).Exp(s, big.NewInt(int64(pub.E)), pub.N)
+
+	// C * S**E mod N
+	Cprime := new(big.Int)
+	Cprime.Mul(c, S).Mod(Cprime, pub.N)
+
+	Pbytes, err := r.Decrypt(Cprime.Bytes())
+	if err != nil {
+		panic(err)
+	}
+
+	// P' * ModInv(s, N)
+	Pprime := new(big.Int).SetBytes(Pbytes)
+	P := new(big.Int).Mul(Pprime, new(big.Int).ModInverse(s, pub.N))
+
+	return P.Mod(P, pub.N).Bytes()
 }

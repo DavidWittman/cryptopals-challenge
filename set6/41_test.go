@@ -5,8 +5,10 @@ import (
 	"testing"
 )
 
+const SECRET_41 = "{time: 1356304276, social: '555-55-5555',}"
+
 func TestOracleSameMessageTwice(t *testing.T) {
-	msg := []byte("YELLOW SUBMARINE")
+	msg := []byte(SECRET_41)
 	r := NewRSAOracle()
 	cipher := r.Encrypt(msg)
 
@@ -18,14 +20,13 @@ func TestOracleSameMessageTwice(t *testing.T) {
 		t.Errorf("Decryption error. Got: %s", result)
 	}
 
-	_, err = r.Decrypt(cipher)
-	if err == nil {
+	if _, err = r.Decrypt(cipher); err == nil {
 		t.Errorf("Oracle did not reject duplicate ciphertext")
 	}
 }
 
 func TestRecoverMessage(t *testing.T) {
-	msg := []byte("YELLOW SUBMARINE")
+	msg := []byte(SECRET_41)
 	r := NewRSAOracle()
 	cipher := r.Encrypt(msg)
 	// Decrypt once to ensure that we can't use the same cipher
