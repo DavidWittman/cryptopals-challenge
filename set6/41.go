@@ -51,3 +51,44 @@
  */
 
 package set6
+
+import (
+	"crypto/rsa"
+	"crypto/sha256"
+	"fmt"
+
+	"github.com/DavidWittman/cryptopals-challenge/set5"
+)
+
+type RSAOracle struct {
+	privateKey *rsa.PrivateKey
+	seenMsgs   map[[sha256.Size]byte]bool
+}
+
+func NewRSAOracle() *RSAOracle {
+	privKey, err := set_five.RSAGenerate()
+	if err != nil {
+		panic(err)
+	}
+
+	return &RSAOracle{
+		privateKey: privKey,
+		seenMsgs:   make(map[[sha256.Size]byte]bool),
+	}
+}
+
+func (r *RSAOracle) Encrypt(blob []byte) []byte {
+	return set_five.RSAEncrypt(blob, &r.privateKey.PublicKey)
+}
+
+func (r *RSAOracle) Decrypt(blob []byte) ([]byte, error) {
+	hash := sha256.Sum256(blob)
+
+	if _, ok := r.seenMsgs[hash]; ok {
+		return []byte{}, fmt.Errorf("This message has already been seen and will not be decrypted again")
+	}
+
+	r.seenMsgs[hash] = true
+
+	return set_five.RSADecrypt(blob, r.privateKey), nil
+}
